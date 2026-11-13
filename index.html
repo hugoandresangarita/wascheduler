@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>WhatsApp Scheduler Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f3f4f6;
+      color: #1f2937;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Estilos específicos para la simulación móvil ultra compacta */
+    body.mobile-mode-active {
+      background-color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .mobile-sim {
+      width: 380px !important;
+      max-width: 100vw !important;
+      height: calc(100vh - 54px) !important;
+      max-height: 800px !important;
+      margin: 0 auto !important;
+      border: 8px solid #1e293b !important;
+      border-radius: 32px !important;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+      background-color: #f8fafc !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      position: relative !important;
+    }
+
+    @media (max-width: 480px) {
+      body.mobile-mode-active {
+        background-color: #f8fafc;
+      }
+      .mobile-sim {
+        width: 100vw !important;
+        height: calc(100vh - 42px) !important;
+        max-height: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+      }
+    }
+
+    /* Compactación extrema forzada dentro de .mobile-sim */
+    .mobile-sim .sim-pad { padding: 6px !important; }
+    .mobile-sim .sim-header-title { font-size: 13px !important; line-height: 1.1 !important; }
+    .mobile-sim .sim-sub { font-size: 10px !important; }
+    .mobile-sim .sim-input {
+      padding: 4px 8px !important;
+      font-size: 10.5px !important;
+      height: 26px !important;
+      border-radius: 6px !important;
+    }
+    .mobile-sim .sim-date-input {
+      padding: 2px 4px !important;
+      font-size: 9px !important;
+      height: 24px !important;
+      border-radius: 6px !important;
+    }
+    .mobile-sim .sim-date-input::-webkit-calendar-picker-indicator {
+      width: 11px !important;
+      height: 11px !important;
+      padding: 0 !important;
+      margin-left: 1px !important;
+    }
+    .mobile-sim .stats-grid {
+      display: grid !important;
+      grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      gap: 4px !important;
+      margin-bottom: 6px !important;
+    }
+    .mobile-sim .stat-card {
+      padding: 5px 4px !important;
+      border-radius: 8px !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      text-align: center !important;
+      gap: 2px !important;
+    }
+    .mobile-sim .stat-icon {
+      width: 22px !important;
+      height: 22px !important;
+      font-size: 10px !important;
+    }
+    .mobile-sim .stat-num {
+      font-size: 13px !important;
+      line-height: 1 !important;
+    }
+    .mobile-sim .stat-label {
+      font-size: 8px !important;
+      line-height: 1 !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      max-width: 100% !important;
+    }
+    .mobile-sim .sim-tab {
+      padding: 4px 10px !important;
+      font-size: 10px !important;
+    }
+    .mobile-sim .sim-table th,
+    .mobile-sim .sim-table td {
+      padding: 4px 6px !important;
+      font-size: 10px !important;
+    }
+    .mobile-sim .sim-avatar {
+      width: 22px !important;
+      height: 22px !important;
+      font-size: 9px !important;
+    }
+
+    /* Scrollbar delgado */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Barra superior de control de vista (Escritorio / Móvil) -->
+  <div id="top-mode-bar" class="bg-slate-900 text-white px-3 py-1.5 flex items-center justify-between text-xs z-50 shrink-0 shadow">
+    <div class="flex items-center gap-2">
+      <i class="fa-brands fa-whatsapp text-emerald-400 text-base"></i>
+      <span class="font-bold tracking-tight">WhatsApp Scheduler Pro</span>
+      <span id="sync-status-badge" class="hidden sm:inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] font-medium">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Nube Activa
+      </span>
+    </div>
+    <div class="flex items-center gap-1.5 bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+      <button id="btn-mode-desktop" onclick="setViewportMode('desktop')" class="px-2.5 py-1 rounded-md text-[11px] font-semibold transition flex items-center gap-1 bg-emerald-600 text-white">
+        <i class="fa-solid fa-desktop"></i> Escritorio
+      </button>
+      <button id="btn-mode-mobile" onclick="setViewportMode('mobile')" class="px-2.5 py-1 rounded-md text-[11px] font-semibold transition flex items-center gap-1 text-slate-300 hover:text-white">
+        <i class="fa-solid fa-mobile-screen-button"></i> Vista Móvil
+      </button>
+    </div>
+  </div>
+
+  <!-- Contenedor Principal de la Aplicación -->
+  <div id="app-shell" class="flex-1 flex flex-col max-w-6xl w-full mx-auto bg-white shadow-sm overflow-hidden">
+
+    <!-- Overlay de carga inicial -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+      <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+      <p class="text-sm font-semibold text-slate-700">Conectando con tu base de datos...</p>
+    </div>
+
+    <!-- Navegación Escritorio -->
+    <nav id="desktop-nav" class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-2">
+        <button onclick="switchView('pending')" id="nav-pending" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 bg-emerald-50 text-emerald-700">
+          <i class="fa-regular fa-clock"></i> Pendientes
+          <span id="badge-pending-desktop" class="bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+        </button>
+        <button onclick="switchView('summary')" id="nav-summary" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 text-slate-600 hover:bg-slate-100">
+          <i class="fa-solid fa-chart-pie"></i> Resumen
+        </button>
+        <button onclick="switchView('history')" id="nav-history" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 text-slate-600 hover:bg-slate-100">
+          <i class="fa-solid fa-clock-rotate-left"></i> Historial
+        </button>
+        <button onclick="switchView('contacts')" id="nav-contacts" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 text-slate-600 hover:bg-slate-100">
+          <i class="fa-regular fa-address-book"></i> Contactos
+        </button>
+      </div>
+      <button onclick="openNewMessageModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition">
+        <i class="fa-solid fa-plus"></i> Nuevo Mensaje
+      </button>
+    </nav>
+
+    <!-- Área de Contenido Principal -->
+    <main id="main-scroll-area" class="flex-1 flex flex-col min-h-0 overflow-y-auto bg-slate-50">
+
+      <!-- VISTA 1: PENDIENTES -->
+      <section id="view-pending" class="view-section flex-1 flex flex-col min-h-0 p-4 md:p-6 sim-pad">
+        <div class="flex items-center justify-between gap-2 mb-2 shrink-0">
+          <div>
+            <h1 class="text-lg md:text-xl font-bold text-slate-800 sim-header-title">Envíos Pendientes</h1>
+            <p class="text-xs text-slate-500 sim-sub">Mensajes programados listos para disparar</p>
+          </div>
+          <span id="pending-count-pill" class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded-full sim-sub">0 pendientes</span>
+        </div>
+
+        <!-- Barra de búsqueda y filtro -->
+        <div class="grid grid-cols-12 gap-1.5 mb-2 shrink-0">
+          <div class="col-span-8 relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+            <input type="text" id="pending-search" oninput="renderPending()" placeholder="Buscar nombre, teléfono o campaña..." class="w-full pl-7 pr-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 sim-input" />
+          </div>
+          <div class="col-span-4">
+            <select id="pending-filter-repeat" onchange="renderPending()" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 sim-input">
+              <option value="all">Todos</option>
+              <option value="once">Únicos</option>
+              <option value="recurring">Recurrentes</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Lista de tarjetas pendientes -->
+        <div id="pending-list" class="flex-1 overflow-y-auto space-y-1.5 pr-0.5 pb-2"></div>
+      </section>
+
+      <!-- VISTA 2: RESUMEN (CAMPAÑAS Y TARJETAS DESPLEGABLES) -->
+      <section id="view-summary" class="view-section hidden flex-1 flex flex-col min-h-0 p-4 md:p-6 sim-pad">
+        <!-- 4 Tarjetas de Estadísticas -->
+        <div class="stats-grid grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 shrink-0">
+          <div onclick="filterSummaryByCard('all')" class="stat-card cursor-pointer bg-white p-3.5 rounded-xl border-2 border-teal-500 shadow-sm flex items-center gap-3 transition hover:shadow">
+            <div class="stat-icon w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-comment-dots"></i>
+            </div>
+            <div class="min-w-0">
+              <div id="stat-total-campaigns" class="stat-num text-xl font-extrabold text-slate-800">0</div>
+              <div class="stat-label text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Todas Campañas</div>
+            </div>
+          </div>
+
+          <div onclick="filterSummaryByCard('completed')" class="stat-card cursor-pointer bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 transition hover:shadow">
+            <div class="stat-icon w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-check"></i>
+            </div>
+            <div class="min-w-0">
+              <div id="stat-completed-campaigns" class="stat-num text-xl font-extrabold text-slate-800">0</div>
+              <div class="stat-label text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Completadas</div>
+            </div>
+          </div>
+
+          <div onclick="filterSummaryByCard('pending')" class="stat-card cursor-pointer bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 transition hover:shadow">
+            <div class="stat-icon w-10 h-10 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center shrink-0">
+              <i class="fa-regular fa-clock"></i>
+            </div>
+            <div class="min-w-0">
+              <div id="stat-pending-campaigns" class="stat-num text-xl font-extrabold text-slate-800">0</div>
+              <div class="stat-label text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Pendientes</div>
+            </div>
+          </div>
+
+          <div onclick="filterSummaryByCard('scheduled')" class="stat-card cursor-pointer bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 transition hover:shadow">
+            <div class="stat-icon w-10 h-10 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-calendar-check"></i>
+            </div>
+            <div class="min-w-0">
+              <div id="stat-scheduled-msgs" class="stat-num text-xl font-extrabold text-slate-800">0</div>
+              <div class="stat-label text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Programados</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pestañas Campañas / Mensajes y Buscador -->
+        <div class="bg-white rounded-xl border border-slate-200 p-2.5 md:p-4 flex-1 flex flex-col min-h-0 shadow-sm sim-pad">
+          <div class="flex items-center justify-between gap-1.5 mb-2 shrink-0">
+            <div class="flex items-center gap-1">
+              <button id="tab-campaigns" onclick="setSummaryTab('campaigns')" class="sim-tab px-3.5 py-1.5 rounded-full text-xs font-semibold bg-teal-600 text-white transition">
+                Campañas
+              </button>
+              <button id="tab-messages" onclick="setSummaryTab('messages')" class="sim-tab px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+                Mensajes
+              </button>
+            </div>
+            <div class="relative flex-1 max-w-[180px]">
+              <i class="fa-solid fa-magnifying-glass absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+              <input type="text" id="summary-search" oninput="renderSummary()" placeholder="Buscar..." class="w-full pl-6 pr-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-teal-500 sim-input" />
+            </div>
+          </div>
+
+          <!-- Contenedor de tarjetas desplegables estilo captura -->
+          <div id="summary-content-list" class="flex-1 overflow-y-auto space-y-2 pr-0.5 pb-2"></div>
+        </div>
+      </section>
+
+      <!-- VISTA 3: HISTORIAL -->
+      <section id="view-history" class="view-section hidden flex-1 flex flex-col min-h-0 p-4 md:p-6 sim-pad">
+        <div class="flex items-center justify-between mb-1.5 shrink-0">
+          <h1 class="text-lg md:text-xl font-bold text-slate-800 sim-header-title">Historial de Envíos</h1>
+          <span id="history-count-pill" class="text-xs font-semibold text-slate-500 sim-sub">0 registros</span>
+        </div>
+
+        <!-- Buscador + Fila de 3 filtros (Desde, Hasta, Estado) compactos -->
+        <div class="space-y-1.5 mb-2 shrink-0">
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+            <input type="text" id="history-search" oninput="renderHistory()" placeholder="Buscar en historial..." class="w-full pl-7 pr-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-emerald-500 sim-input" />
+          </div>
+          <div class="grid grid-cols-3 gap-1">
+            <input type="date" id="history-date-from" onchange="renderHistory()" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-600 sim-date-input" title="Desde" />
+            <input type="date" id="history-date-to" onchange="renderHistory()" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-600 sim-date-input" title="Hasta" />
+            <select id="history-status-filter" onchange="renderHistory()" class="w-full bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-xs text
