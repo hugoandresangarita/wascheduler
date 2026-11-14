@@ -45,7 +45,7 @@
             animation: fadeOut 0.3s ease-out forwards;
         }
 
-        /* Compactación forzada y máxima para Vista Móvil (evita que md: de ventana ancha agrande los elementos) */
+        /* Compactación forzada y máxima para Vista Móvil */
         .mobile-sim #stats-grid {
             grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
             gap: 0.25rem !important;
@@ -164,6 +164,50 @@
 </head>
 <body class="text-gray-800 h-screen flex overflow-hidden transition-colors duration-300" id="app-body">
 
+    <!-- Pantalla de Inicio de Sesión (Privada) -->
+    <div id="login-screen" class="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-teal-950 z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 md:p-8 border border-gray-100">
+            <div class="flex flex-col items-center text-center mb-6">
+                <div class="w-14 h-14 rounded-2xl bg-green-50 border border-green-100 flex items-center justify-center mb-3 shadow-sm">
+                    <i class="ph-fill ph-whatsapp-logo text-green-500 text-3xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">WaScheduler Pro</h1>
+                <p class="text-xs md:text-sm text-gray-500 mt-1">Acceso privado • Inicia sesión para continuar</p>
+            </div>
+
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Usuario / Correo</label>
+                    <div class="relative">
+                        <i class="ph ph-envelope-simple absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                        <input type="email" id="login-email" required placeholder="tu-usuario@dominio.com" class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all" autocomplete="username">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Contraseña</label>
+                    <div class="relative">
+                        <i class="ph ph-lock-simple absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all" autocomplete="current-password">
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <i id="login-eye-icon" class="ph ph-eye text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="login-error-box" class="hidden p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-medium flex items-center gap-2">
+                    <i class="ph-fill ph-warning-circle text-base shrink-0"></i>
+                    <span id="login-error-text">Usuario o contraseña incorrectos.</span>
+                </div>
+
+                <button type="submit" id="login-submit-btn" class="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-lg shadow-green-600/25 transition-all flex items-center justify-center gap-2 text-sm mt-2">
+                    <i class="ph-bold ph-sign-in text-lg"></i>
+                    <span>Ingresar a mi Panel</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Contenedor principal adaptativo (permite simular marco móvil en escritorio) -->
     <div id="device-shell" class="w-full h-full flex overflow-hidden bg-[#f3f4f6] transition-all duration-300 relative">
 
@@ -205,7 +249,6 @@
                     <input type="text" id="sidebar-search" placeholder="Buscar por nombre..." class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all" autocomplete="off">
                 </div>
                 <div id="sidebar-message-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1 pb-2">
-                    <!-- Sidebar items injected here -->
                     <p class="text-xs text-gray-400 text-center py-4">No hay mensajes programados.</p>
                 </div>
             </div>
@@ -215,14 +258,19 @@
                 <i class="ph ph-magic-wand text-base"></i>
                 <span class="hidden lg:inline">Cargar Datos Prueba</span>
             </button>
-            <div class="flex items-center justify-center lg:justify-start">
-                <div class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold shrink-0">
-                    <i class="ph ph-user"></i>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center justify-center lg:justify-start min-w-0">
+                    <div class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold shrink-0">
+                        <i class="ph ph-user"></i>
+                    </div>
+                    <div class="ml-3 hidden lg:block min-w-0">
+                        <p class="text-sm font-medium text-gray-700 truncate" id="user-email-display">Mi Cuenta</p>
+                        <p class="text-xs text-green-600 font-medium" id="user-status-text">Conectando...</p>
+                    </div>
                 </div>
-                <div class="ml-3 hidden lg:block">
-                    <p class="text-sm font-medium text-gray-700">Mi Cuenta</p>
-                    <p class="text-xs text-gray-500" id="user-status-text">Conectando...</p>
-                </div>
+                <button onclick="logoutUser()" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0" title="Cerrar sesión">
+                    <i class="ph ph-sign-out text-lg"></i>
+                </button>
             </div>
         </div>
     </aside>
@@ -252,12 +300,15 @@
                 <i class="ph-fill ph-whatsapp-logo text-green-500 text-2xl"></i>
                 <span class="font-bold text-base text-gray-800 tracking-tight">WaScheduler</span>
             </div>
-            <div class="flex items-center gap-2">
-                <button onclick="seedTestData()" class="px-2.5 py-1.5 bg-teal-50 text-teal-700 text-[11px] font-semibold rounded-lg border border-teal-200 flex items-center gap-1" title="Generar datos de prueba">
+            <div class="flex items-center gap-1.5">
+                <button onclick="seedTestData()" class="px-2 py-1.5 bg-teal-50 text-teal-700 text-[11px] font-semibold rounded-lg border border-teal-200 flex items-center gap-1" title="Generar datos de prueba">
                     <i class="ph ph-magic-wand text-sm"></i> Prueba
                 </button>
-                <button onclick="setViewportMode('desktop')" id="btn-exit-mobile" class="hidden px-2.5 py-1.5 bg-gray-800 text-white text-[11px] font-semibold rounded-lg items-center gap-1" title="Volver a vista escritorio">
+                <button onclick="setViewportMode('desktop')" id="btn-exit-mobile" class="hidden px-2 py-1.5 bg-gray-800 text-white text-[11px] font-semibold rounded-lg items-center gap-1" title="Volver a vista escritorio">
                     <i class="ph ph-desktop text-sm"></i> PC
+                </button>
+                <button onclick="logoutUser()" class="p-1.5 text-gray-500 hover:text-red-600 bg-gray-50 border border-gray-200 rounded-lg" title="Cerrar sesión">
+                    <i class="ph ph-sign-out text-sm"></i>
                 </button>
             </div>
         </header>
@@ -420,7 +471,6 @@
                                     <i class="ph ph-copy text-base md:text-lg"></i>
                                 </button>
                             </div>
-                            <!-- Contenedor de destinatarios seleccionados (Chips) -->
                             <div id="selected-recipients-container" class="flex flex-wrap gap-1.5 mt-2"></div>
                         </div>
                         
@@ -573,7 +623,6 @@
                             <span id="contact-count" class="bg-gray-100 text-gray-700 text-[10px] md:text-xs font-bold px-1.5 py-0.5 rounded-full">0</span>
                         </div>
                         
-                        <!-- Buscador de contactos -->
                         <div class="relative flex-1 max-w-[190px] sm:max-w-xs">
                             <i class="ph ph-magnifying-glass absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-base"></i>
                             <input type="text" id="contact-search" placeholder="Buscar..." class="w-full pl-6 md:pl-9 pr-2 py-1 md:py-2 bg-gray-50 border border-gray-200 rounded-lg text-[11px] md:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
@@ -712,11 +761,7 @@
             </div>
             
             <div class="p-6 min-h-[350px] flex flex-col" style="background-color: #efeae2; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-size: cover; background-position: center;">
-                
-                <div class="bg-[#d9fdd3] text-gray-900 p-3 rounded-lg rounded-tl-none shadow-sm max-w-[85%] text-sm whitespace-pre-wrap relative" id="preview-msg-text">
-                    <!-- Text injected here -->
-                </div>
-                
+                <div class="bg-[#d9fdd3] text-gray-900 p-3 rounded-lg rounded-tl-none shadow-sm max-w-[85%] text-sm whitespace-pre-wrap relative" id="preview-msg-text"></div>
                 <div class="mt-auto pt-6" id="preview-warning-box">
                     <div class="bg-[#fef6ca] text-amber-800 p-3 rounded-xl shadow-sm text-xs flex gap-3 items-center">
                         <i class="ph-fill ph-warning-circle text-amber-600 text-xl shrink-0"></i>
@@ -743,16 +788,14 @@
                 </h3>
                 <button onclick="document.getElementById('recipients-modal').classList.replace('flex','hidden')" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-xl"></i></button>
             </div>
-            <div class="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-3" id="recipients-list-container">
-                <!-- injected via JS -->
-            </div>
+            <div class="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-3" id="recipients-list-container"></div>
             <div class="p-4 border-t border-gray-100 shrink-0">
                 <button onclick="document.getElementById('recipients-modal').classList.replace('flex','hidden')" class="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors">Cerrar</button>
             </div>
         </div>
     </div>
 
-    <!-- Custom Confirm Modal (Replacing window.confirm for iframe compatibility) -->
+    <!-- Custom Confirm Modal -->
     <div id="custom-confirm-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all p-6">
             <div class="flex items-center gap-3 mb-3">
@@ -772,7 +815,7 @@
     <!-- Firebase and Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURACIÓN DE FIREBASE ---
@@ -801,7 +844,9 @@
         const pendingCount = document.getElementById('pending-count');
         const historyCount = document.getElementById('history-count');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const loginScreen = document.getElementById('login-screen');
         const userStatusText = document.getElementById('user-status-text');
+        const userEmailDisplay = document.getElementById('user-email-display');
         
         const historySearchInput = document.getElementById('history-search');
         const historyStatusFilter = document.getElementById('history-filter-status');
@@ -810,22 +855,22 @@
         
         const sidebarSearch = document.getElementById('sidebar-search');
         const sidebarMessageList = document.getElementById('sidebar-message-list');
-
         const contactSearchInput = document.getElementById('contact-search');
         
         let app, db, auth;
         let currentUserId = null;
+        let unsubMessages = null;
+        let unsubContacts = null;
         let allMessages = [];
         let allContacts = [];
-        let selectedRecipients = []; // Lista de destinatarios agregados
+        let selectedRecipients = [];
         let messageToPostpone = null;
         let currentEditCampaignName = null;
         
         let isImportingContacts = false;
-        let campaignMode = 'grouped'; // 'grouped' or 'flat'
+        let campaignMode = 'grouped';
         let isSimulatedMobile = false;
         
-        // Campaign Filter State
         let campaignFilterState = {
             startDate: '',
             endDate: '',
@@ -833,7 +878,33 @@
             status: 'all'
         };
 
-        // Custom Async Confirm helper (evita bloqueos de window.confirm en iFrames)
+        window.togglePasswordVisibility = () => {
+            const pwdInput = document.getElementById('login-password');
+            const eyeIcon = document.getElementById('login-eye-icon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                eyeIcon.className = 'ph ph-eye-slash text-lg';
+            } else {
+                pwdInput.type = 'password';
+                eyeIcon.className = 'ph ph-eye text-lg';
+            }
+        };
+
+        window.logoutUser = async () => {
+            if (!auth) return;
+            try {
+                if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+                if (unsubContacts) { unsubContacts(); unsubContacts = null; }
+                await signOut(auth);
+                allMessages = [];
+                allContacts = [];
+                showToast("Sesión cerrada correctamente", "info");
+            } catch (err) {
+                console.error("Error al cerrar sesión:", err);
+                showToast("Error al cerrar sesión", "error");
+            }
+        };
+
         const showConfirmDialog = (message) => {
             return new Promise((resolve) => {
                 const modal = document.getElementById('custom-confirm-modal');
@@ -859,7 +930,6 @@
             });
         };
 
-        // Formatting utilities
         const formatDate = (dateStr) => {
             const date = new Date(dateStr + 'T00:00:00');
             return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -876,22 +946,16 @@
         const showToast = (message, type = 'success') => {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            
             const icon = type === 'success' ? '<i class="ph-fill ph-check-circle text-green-500 text-xl"></i>' : '<i class="ph-fill ph-info text-blue-500 text-xl"></i>';
-            const bg = 'bg-white';
-            
-            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border border-gray-100 ${bg} toast-enter text-sm font-medium`;
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border border-gray-100 bg-white toast-enter text-sm font-medium`;
             toast.innerHTML = `${icon} <span>${message}</span>`;
-            
             container.appendChild(toast);
-            
             setTimeout(() => {
                 toast.classList.replace('toast-enter', 'toast-exit');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         };
 
-        // Navigation (View Toggling)
         window.setViewportMode = (mode) => {
             const body = document.getElementById('app-body');
             const shell = document.getElementById('device-shell');
@@ -1007,7 +1071,6 @@
                 const el = document.getElementById(`view-${v}`);
                 if(el) el.classList.toggle('hidden', v !== view);
                 
-                // Desktop nav
                 const nav = document.getElementById(`nav-${v}`);
                 if(nav) {
                     if (v === view) {
@@ -1024,7 +1087,6 @@
                     }
                 }
 
-                // Mobile nav
                 const mobNav = document.getElementById(`mob-nav-${v}`);
                 if(mobNav) {
                     if (v === view) {
@@ -1066,7 +1128,40 @@
             }
         };
 
-        // Firebase Initialization & Auth
+        // Manejar envío del formulario de Login
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errorBox = document.getElementById('login-error-box');
+            const errorText = document.getElementById('login-error-text');
+            const submitBtn = document.getElementById('login-submit-btn');
+
+            errorBox.classList.add('hidden');
+            const origHtml = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i> Verificando...';
+            submitBtn.disabled = true;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                document.getElementById('login-password').value = '';
+            } catch (err) {
+                console.error("Login Error:", err);
+                errorBox.classList.remove('hidden');
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+                    errorText.textContent = "Usuario o contraseña incorrectos.";
+                } else if (err.code === 'auth/too-many-requests') {
+                    errorText.textContent = "Demasiados intentos fallidos. Espera unos minutos.";
+                } else {
+                    errorText.textContent = "Error al iniciar sesión: " + err.message;
+                }
+            } finally {
+                submitBtn.innerHTML = origHtml;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Firebase Initialization & Auth State Observer
         async function initialize() {
             if (!firebaseConfig) {
                 showToast("Falta configuración de base de datos.", "error");
@@ -1079,21 +1174,26 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // Auth flow
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    const userCredential = await signInWithCustomToken(auth, __initial_auth_token);
-                    currentUserId = userCredential.user.uid;
-                } else {
-                    const userCredential = await signInAnonymously(auth);
-                    currentUserId = userCredential.user.uid;
+                    await signInWithCustomToken(auth, __initial_auth_token);
                 }
-                
-                userStatusText.textContent = "Conectado";
-                
-                // Initialize Listeners
-                setupRealtimeListener();
-                
-                loadingOverlay.classList.add('hidden');
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user && !user.isAnonymous) {
+                        currentUserId = user.uid;
+                        loginScreen.classList.replace('flex', 'hidden');
+                        userStatusText.textContent = "Conectado";
+                        if (userEmailDisplay && user.email) {
+                            userEmailDisplay.textContent = user.email;
+                        }
+                        setupRealtimeListener();
+                        loadingOverlay.classList.add('hidden');
+                    } else {
+                        currentUserId = null;
+                        loadingOverlay.classList.add('hidden');
+                        loginScreen.classList.replace('hidden', 'flex');
+                    }
+                });
                 
             } catch (error) {
                 console.error("Initialization Error:", error);
@@ -1107,10 +1207,13 @@
         function setupRealtimeListener() {
             if (!currentUserId) return;
 
+            if (unsubMessages) unsubMessages();
+            if (unsubContacts) unsubContacts();
+
             const messagesRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'messages');
             const contactsRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'contacts');
 
-            onSnapshot(messagesRef, (snapshot) => {
+            unsubMessages = onSnapshot(messagesRef, (snapshot) => {
                 allMessages = [];
                 snapshot.forEach(doc => {
                     allMessages.push({ id: doc.id, ...doc.data() });
@@ -1118,10 +1221,10 @@
                 renderUI();
             }, (error) => {
                 console.error("Listen failed:", error);
-                showToast("Error al cargar mensajes.", "error");
+                showToast("Sin permisos o error al cargar mensajes.", "error");
             });
 
-            onSnapshot(contactsRef, (snapshot) => {
+            unsubContacts = onSnapshot(contactsRef, (snapshot) => {
                 allContacts = [];
                 snapshot.forEach(doc => {
                     allContacts.push({ id: doc.id, ...doc.data() });
@@ -1136,20 +1239,14 @@
             if (!e.target.closest('td.relative')) {
                 document.querySelectorAll('[id^="popover-"]').forEach(el => el.classList.add('hidden'));
             }
-            
-            // Close Action menus
             if (!e.target.closest('.action-menu-btn') && !e.target.closest('.action-menu-dropdown')) {
                 document.querySelectorAll('.action-menu-dropdown').forEach(el => el.classList.add('hidden'));
                 document.querySelectorAll('.campaign-row').forEach(el => el.style.zIndex = '1');
             }
-
-            // Close Mobile Flat Menus
             if (!e.target.closest('.mob-flat-menu-btn') && !e.target.closest('.mob-flat-menu')) {
                 document.querySelectorAll('.mob-flat-menu').forEach(el => el.classList.add('hidden'));
                 document.querySelectorAll('.mob-msg-card').forEach(el => el.style.zIndex = '1');
             }
-
-            // Close filter popover logic
             const filterBtn = document.getElementById('btn-campaign-filter');
             const popover = document.getElementById('campaign-filter-popover');
             if (filterBtn && popover && !popover.classList.contains('hidden') && !filterBtn.contains(e.target) && !popover.contains(e.target)) {
@@ -1157,7 +1254,6 @@
             }
         });
 
-        // Redirect from contact popover
         window.filterFromContact = (encodedName, category) => {
             const contactName = decodeURIComponent(encodedName);
             document.querySelectorAll('[id^="popover-"]').forEach(el => el.classList.add('hidden'));
@@ -1186,7 +1282,6 @@
             }
         };
 
-        // Render Contacts
         function renderContacts() {
             if (isImportingContacts) return;
             
@@ -1212,12 +1307,10 @@
             }
 
             filteredContacts.sort((a,b) => a.name.localeCompare(b.name));
-            
             const todayStr = new Date().toISOString().split('T')[0];
 
             tableBody.innerHTML = filteredContacts.map((c, index) => {
                 const initial = c.name ? c.name.charAt(0).toUpperCase() : '?';
-                
                 const getDigits = str => (str || '').replace(/\D/g, '');
                 const cDigits = getDigits(c.phone);
                 const contactMessages = allMessages.filter(m => {
@@ -1256,7 +1349,6 @@
                             : `<button onclick="toggleContactPopover('${popoverId}')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] md:text-xs font-semibold px-1.5 md:px-3 py-0.5 md:py-1 rounded-md flex items-center justify-center gap-1 mx-auto transition-colors w-11 md:w-16">
                                     ${total} <i class="ph ph-caret-down text-gray-400"></i>
                                </button>
-                               <!-- Popover -->
                                <div id="${popoverId}" class="hidden absolute top-full right-0 md:left-1/2 md:transform md:-translate-x-1/2 mt-1.5 w-44 md:w-52 bg-white border border-gray-200 rounded-lg shadow-xl z-50 text-left flex flex-col overflow-hidden">
                                    <button onclick="filterFromContact('${encodeURIComponent(c.name)}', 'scheduled')" class="w-full flex justify-between items-center text-xs md:text-sm px-3 md:px-4 py-2 md:py-2.5 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors text-left">
                                        <span class="text-orange-500 font-medium">Programados</span>
@@ -1293,7 +1385,6 @@
 
         if(contactSearchInput) contactSearchInput.addEventListener('input', renderContacts);
 
-        // UI Rendering Pending View
         function renderUI() {
             const pending = [];
             const getTimestamp = (msg) => new Date(`${msg.date}T${msg.time}`).getTime();
@@ -1319,7 +1410,6 @@
             allMessages.forEach(msg => {
                 if (msg.status === 'pending') {
                     if (searchStr && !(msg.name || '').toLowerCase().includes(searchStr) && !(msg.recipient || '').toLowerCase().includes(searchStr)) return;
-                    
                     if (dateStr && msg.date !== dateStr) return;
 
                     if (!dateStr) {
@@ -1376,7 +1466,6 @@
         if(pendingDateInput) pendingDateInput.addEventListener('change', renderUI);
         if(pendingDaysSelect) pendingDaysSelect.addEventListener('change', renderUI);
 
-        // Action Menu Actions
         window.toggleActionMenu = (id) => {
             const dropdown = document.getElementById(`action-menu-${id}`);
             const row = document.getElementById(`row-${id}`);
@@ -1451,7 +1540,6 @@
             }
         };
 
-        // Campaigns rendering logic
         window.setCampaignMode = (mode) => {
             campaignMode = mode;
             if(mode === 'grouped') {
@@ -1499,7 +1587,6 @@
                     const pendingCount = camp.messages.filter(m => m.status === 'pending').length;
                     const progress = Math.min(100, Math.round((sentCount / totalTimes) * 100)) || 0;
                     
-                    // Recipients count
                     const recipientsSet = new Set();
                     camp.messages.forEach(m => recipientsSet.add(m.recipient));
                     const recipientsCount = recipientsSet.size;
@@ -1594,17 +1681,14 @@
             document.getElementById('camp-pending-send').textContent = pendingTodayPastCount;
             document.getElementById('camp-scheduled').textContent = scheduledCount;
 
-            // Resaltar visualmente la tarjeta de filtro activa
             const cardAll = document.getElementById('card-stat-all');
             const cardComp = document.getElementById('card-stat-completed');
             const cardSched = document.getElementById('card-stat-scheduled');
             if (cardAll && cardComp && cardSched) {
                 cardAll.classList.toggle('border-teal-500', campaignFilterState.status === 'all');
                 cardAll.classList.toggle('border-transparent', campaignFilterState.status !== 'all');
-
                 cardComp.classList.toggle('border-green-500', campaignFilterState.status === 'completed');
                 cardComp.classList.toggle('border-transparent', campaignFilterState.status !== 'completed');
-
                 cardSched.classList.toggle('border-amber-500', campaignFilterState.status === 'scheduled');
                 cardSched.classList.toggle('border-transparent', campaignFilterState.status !== 'scheduled');
             }
@@ -1639,7 +1723,6 @@
             });
 
             const formatD = (dStr) => dStr.split('-').reverse().join('.');
-            
             const tableHeader = document.getElementById('campaign-table-header');
             if(campaignMode === 'grouped') {
                 tableHeader.innerHTML = `
@@ -1669,8 +1752,6 @@
 
                     return `
                         <div id="row-${camp.id}" class="campaign-row bg-white border border-gray-200/80 rounded-xl hover:shadow-md transition-shadow relative mb-1.5 ${isSimulatedMobile ? '' : 'md:mb-0 md:contents'}">
-                            
-                            <!-- Vista Compacta Móvil (Estilo tarjeta desplegable ultra compacta) -->
                             <div class="${isSimulatedMobile ? 'block' : 'md:hidden'}">
                                 <div class="p-2 relative">
                                     <div class="flex justify-between items-center gap-1.5">
@@ -1703,8 +1784,6 @@
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- Detalles colapsables (Más detalles / Ocultar detalles) -->
                                     <div id="mob-detail-camp-${camp.id}" class="hidden mt-1.5 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px]">
                                         <div class="flex items-center gap-1">
                                             <i class="ph ph-arrows-clockwise text-gray-400"></i>
@@ -1717,8 +1796,6 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Barra inferior crema estilo tarjeta móvil -->
                                 <div class="bg-[#faf6ef] px-2.5 py-1 border-t border-gray-100 rounded-b-xl flex items-center justify-between">
                                     <span class="text-[10px] font-semibold flex items-center gap-1 px-1.5 py-0.5 rounded ${camp.statusClass}">
                                         ${camp.status}
@@ -1730,26 +1807,20 @@
                                 </div>
                             </div>
                             
-                            <!-- Desktop Row (Grid) -->
                             <div class="${isSimulatedMobile ? 'hidden' : 'hidden md:grid'} md:grid-cols-12 md:gap-4 md:items-center md:px-4 md:py-4">
-                                
                                 <div class="md:col-span-2 text-[11px] text-gray-500 leading-tight">
                                     <div><span class="font-bold text-gray-800">${camp.recipientsCount}</span> Destinatario(s)</div>
                                 </div>
-                                
                                 <div class="md:col-span-3 font-semibold text-gray-800 truncate pr-2 text-sm" title="${camp.name}">
                                     ${camp.name.replace(/</g, "&lt;")}
                                 </div>
-                                
                                 <div class="md:col-span-2">
                                     <span class="px-3 py-1 bg-gray-100 rounded-lg text-[11px] text-gray-600 font-medium whitespace-nowrap">${camp.repeatText}</span>
                                 </div>
-                                
                                 <div class="md:col-span-2 text-xs text-gray-800 font-medium">
                                     <div>${formatD(camp.start)}</div>
                                     <div class="text-gray-400 mt-0.5">${formatD(camp.end)}</div>
                                 </div>
-                                
                                 <div class="md:col-span-1 flex flex-col items-center justify-center">
                                     <div class="relative w-8 h-8 flex items-center justify-center">
                                         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -1760,18 +1831,14 @@
                                     </div>
                                     <span class="text-[9px] font-medium text-gray-400 mt-1">${camp.sentCount}/${camp.totalTimes} veces</span>
                                 </div>
-                                
                                 <div class="md:col-span-1 flex items-center justify-center">
                                     <span class="px-2 py-1 rounded-md text-[10px] font-semibold flex items-center gap-1.5 ${camp.statusClass} whitespace-nowrap">
                                         ${camp.status}
                                     </span>
                                 </div>
-                                
                                 <div class="md:col-span-1 flex items-center justify-end gap-1 pr-2 relative">
                                     <button onclick="openCampaignPreview('${encodeURIComponent(camp.name)}')" class="p-1.5 text-teal-600 bg-teal-50 hover:bg-teal-100 rounded-md transition-colors w-8 h-8 flex justify-center items-center"><i class="ph ph-eye text-lg"></i></button>
                                     <button onclick="toggleActionMenu('desk-${camp.id}')" class="action-menu-btn p-1.5 text-gray-500 hover:text-gray-800 border border-gray-200 hover:bg-gray-50 rounded-md transition-colors w-8 h-8 flex justify-center items-center"><i class="ph ph-dots-three-vertical text-lg"></i></button>
-                                    
-                                    <!-- Action Menu Dropdown -->
                                     <div id="action-menu-desk-${camp.id}" class="action-menu-dropdown hidden absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50 flex flex-col">
                                         <button onclick="viewRecipients('${encodeURIComponent(camp.name)}')" class="w-full text-left px-4 py-2.5 text-xs text-gray-700 hover:bg-gray-50 hover:text-teal-600 flex items-center gap-2 transition-colors">
                                             <i class="ph ph-users text-lg"></i> Ver Destinatarios
@@ -1798,8 +1865,6 @@
 
                     return `
                         <div id="mob-card-${msg.id}" class="mob-msg-card campaign-row bg-white border border-gray-200/80 rounded-xl hover:shadow-md transition-shadow relative mb-1.5 ${isSimulatedMobile ? '' : 'md:mb-0 md:contents'}">
-                            
-                            <!-- Vista Compacta Móvil (Réplica exacta de tus capturas ultra compacta) -->
                             <div class="${isSimulatedMobile ? 'block' : 'md:hidden'}">
                                 <div class="p-2 relative">
                                     <div class="flex justify-between items-start gap-1.5">
@@ -1807,14 +1872,13 @@
                                             <h3 class="font-bold text-gray-900 text-xs leading-tight truncate" title="${cName.replace(/</g, "&lt;")}">${cName.replace(/</g, "&lt;")}</h3>
                                             <div class="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
                                                 ${cPhone ? `<span class="font-mono">${cPhone}</span><span>·</span>` : ''}
-                                                <span class="flex items-center gap-1 text-gray-700 font-medium"><i class="ph ph-clock text-gray-400"></i> ${formatD(camp.start)} ${camp.time}</span>
+                                                <span class="flex items-center gap-1 text-gray-700 font-medium"><i class="ph ph-clock text-gray-400"></i> ${formatD(camp.start)}${camp.time}</span>
                                             </div>
                                         </div>
                                         <div class="relative shrink-0">
                                             <button onclick="toggleMobileFlatMenu('${msg.id}')" class="mob-flat-menu-btn w-6 h-6 rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 flex items-center justify-center transition-colors">
                                                 <i class="ph-bold ph-dots-three-vertical text-xs"></i>
                                             </button>
-                                            <!-- Popover 3 puntos (Ver contenido / Eliminar) -->
                                             <div id="mob-flat-menu-${msg.id}" class="mob-flat-menu hidden absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-gray-100 p-1 z-50 flex flex-col gap-0.5">
                                                 <button onclick="openSingleMessagePreview('${msg.id}'); toggleMobileFlatMenu('${msg.id}')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#2aa1af] bg-[#f0f9fa] hover:bg-[#e1f4f6] flex items-center gap-2 transition-colors">
                                                     <i class="ph ph-eye text-sm"></i> Ver contenido
@@ -1825,8 +1889,6 @@
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- Filas desplegables (Campaña y Repetición) -->
                                     <div id="mob-detail-${msg.id}" class="hidden mt-1.5 pt-1.5 border-t border-gray-100 space-y-1 text-[10px]">
                                         <div class="flex items-center gap-1.5">
                                             <i class="ph ph-clipboard-text text-gray-400"></i>
@@ -1840,8 +1902,6 @@
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Barra inferior crema con estado a la izquierda y Más detalles / Ocultar detalles a la derecha -->
                                 <div class="bg-[#faf6ef] px-2.5 py-1 border-t border-gray-100 rounded-b-xl flex items-center justify-between">
                                     <span class="text-[10px] font-medium flex items-center gap-1 ${camp.status === 'Programado' ? 'text-amber-500' : camp.status === 'Enviado' ? 'text-green-600' : camp.status === 'Cola de hoy' ? 'text-blue-600' : camp.status === 'No enviado' ? 'text-red-600' : 'text-gray-500'}">
                                         <i class="ph-fill ${camp.icon} text-xs"></i> ${camp.status}
@@ -1853,9 +1913,7 @@
                                 </div>
                             </div>
 
-                            <!-- Desktop Grid content -->
                             <div class="${isSimulatedMobile ? 'hidden' : 'hidden md:grid'} md:grid-cols-12 md:gap-4 md:items-center md:px-4 md:py-4">
-                                
                                 <div class="md:col-span-3 items-center gap-3 pr-2 overflow-hidden flex">
                                     <div class="w-10 h-10 rounded-full border border-gray-200 bg-gray-50 text-gray-600 font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
                                         ${initial}
@@ -1865,30 +1923,25 @@
                                         <p class="text-xs text-gray-500 font-mono mt-0.5 truncate">${cPhone}</p>
                                     </div>
                                 </div>
-                                
                                 <div class="md:col-span-3">
                                     <div class="font-semibold text-gray-800 truncate pr-2 text-sm text-left" title="${camp.name}">
                                         ${camp.name.replace(/</g, "&lt;")}
                                     </div>
                                 </div>
-                                
                                 <div class="md:col-span-2">
                                     <span class="px-3 py-1 bg-gray-100 border border-gray-200 rounded-lg text-[11px] text-gray-600 font-medium whitespace-nowrap">${camp.repeatText}</span>
                                 </div>
-                                
                                 <div class="md:col-span-2">
                                     <div class="text-sm font-medium text-left whitespace-nowrap">
                                         <div class="text-gray-800">${formatD(camp.start)}</div>
                                         <div class="text-gray-400 text-xs mt-0.5">${camp.time}</div>
                                     </div>
                                 </div>
-                                
                                 <div class="md:col-span-1 flex justify-center items-center">
                                     <span class="px-2 py-1 rounded-md text-[10px] font-semibold flex items-center gap-1.5 ${camp.statusClass} whitespace-nowrap">
                                         <i class="ph ${camp.icon} text-xs"></i> ${camp.status}
                                     </span>
                                 </div>
-                                
                                 <div class="md:col-span-1 flex items-center justify-end gap-1 pr-2">
                                     <button onclick="openSingleMessagePreview('${msg.id}')" class="w-8 h-8 flex items-center justify-center text-teal-600 bg-white hover:bg-teal-50 border border-teal-100 rounded-md transition-colors" title="Ver / Editar"><i class="ph ph-eye text-lg"></i></button>
                                     <button onclick="deleteMessage('${msg.id}')" class="w-8 h-8 flex items-center justify-center text-red-500 bg-white hover:bg-red-50 border border-red-100 rounded-md transition-colors" title="Eliminar"><i class="ph ph-trash text-lg"></i></button>
@@ -1906,1094 +1959,3 @@
                 listContainer.innerHTML = `
                     <div class="h-full flex flex-col items-center justify-center text-gray-400 py-10">
                         <i class="ph ph-presentation-chart text-4xl mb-2 opacity-50"></i>
-                        <p>No se encontraron campañas</p>
-                        ${allMessages.length === 0 ? `<button onclick="seedTestData()" class="mt-4 px-4 py-2 bg-teal-50 text-teal-600 rounded-lg text-sm font-medium hover:bg-teal-100 transition-colors flex items-center"><i class="ph ph-magic-wand mr-1 text-lg"></i> Generar datos de prueba</button>` : ''}
-                    </div>`;
-            }
-        }
-
-        const campSearchInput = document.getElementById('campaign-search');
-        if(campSearchInput) campSearchInput.addEventListener('input', renderCampaigns);
-
-        // Campaign Preview Logic
-        window.openSingleMessagePreview = (id) => {
-            const msg = allMessages.find(m => m.id === id);
-            if(!msg) return;
-            
-            document.getElementById('preview-msg-text').textContent = msg.text;
-            document.getElementById('preview-warning-box').classList.add('hidden');
-            
-            const btn = document.getElementById('btn-edit-future');
-            btn.innerHTML = '<i class="ph ph-pencil-simple text-lg"></i> Editar mensaje';
-            btn.onclick = () => {
-                closeCampaignPreviewModal();
-                openEditModal(msg.id, null); // null for single edit only
-            };
-            
-            document.getElementById('campaign-preview-modal').classList.replace('hidden', 'flex');
-        };
-
-        window.openCampaignPreview = (encodedName) => {
-            const name = decodeURIComponent(encodedName);
-            const campMessages = allMessages.filter(m => m.name === name);
-            const targetMsg = campMessages.find(m => m.status === 'pending') || campMessages[0];
-            
-            if(!targetMsg) return;
-
-            document.getElementById('preview-msg-text').textContent = targetMsg.text;
-            document.getElementById('preview-warning-box').classList.remove('hidden');
-            
-            const btn = document.getElementById('btn-edit-future');
-            btn.innerHTML = '<i class="ph ph-pencil-simple text-lg"></i> Editar próximos mensajes';
-            btn.onclick = () => {
-                closeCampaignPreviewModal();
-                openEditModal(targetMsg.id, name);
-            };
-
-            document.getElementById('campaign-preview-modal').classList.replace('hidden', 'flex');
-        };
-
-        window.closeCampaignPreviewModal = () => {
-            document.getElementById('campaign-preview-modal').classList.replace('flex', 'hidden');
-        };
-
-        // Campaign Filter Popover Logic
-        window.filterFromSummaryCard = (statusType) => {
-            campaignFilterState.status = statusType;
-            const statusSelect = document.getElementById('camp-filter-status');
-            if (statusSelect) statusSelect.value = statusType;
-            renderCampaigns();
-        };
-
-        window.toggleCampaignFilter = () => {
-            document.getElementById('camp-filter-start').value = campaignFilterState.startDate;
-            document.getElementById('camp-filter-end').value = campaignFilterState.endDate;
-            document.getElementById('camp-filter-repeat').value = campaignFilterState.repeatType;
-            document.getElementById('camp-filter-status').value = campaignFilterState.status;
-            
-            const popover = document.getElementById('campaign-filter-popover');
-            popover.classList.toggle('hidden');
-        };
-
-        window.setFilterDateRange = (days) => {
-            const end = new Date();
-            const start = new Date();
-            if (days > 0) start.setDate(end.getDate() - days);
-            document.getElementById('camp-filter-start').value = start.toISOString().split('T')[0];
-            document.getElementById('camp-filter-end').value = end.toISOString().split('T')[0];
-        };
-
-        window.clearFilterSection = (section) => {
-            if (section === 'date') {
-                document.getElementById('camp-filter-start').value = '';
-                document.getElementById('camp-filter-end').value = '';
-            } else if (section === 'repeat') {
-                document.getElementById('camp-filter-repeat').value = 'all';
-            } else if (section === 'status') {
-                document.getElementById('camp-filter-status').value = 'all';
-            }
-        };
-
-        window.applyCampaignFilters = () => {
-            campaignFilterState.startDate = document.getElementById('camp-filter-start').value;
-            campaignFilterState.endDate = document.getElementById('camp-filter-end').value;
-            campaignFilterState.repeatType = document.getElementById('camp-filter-repeat').value;
-            campaignFilterState.status = document.getElementById('camp-filter-status').value;
-            
-            renderCampaigns();
-            toggleCampaignFilter(); // Close popover
-            const hasFilters = campaignFilterState.startDate || campaignFilterState.endDate || campaignFilterState.repeatType !== 'all' || campaignFilterState.status !== 'all';
-            if (hasFilters) showToast("Filtros aplicados");
-        };
-
-        window.resetCampaignFilters = () => {
-            campaignFilterState = { startDate: '', endDate: '', repeatType: 'all', status: 'all' };
-            renderCampaigns();
-            toggleCampaignFilter(); // Close popover
-            showToast("Filtros restablecidos");
-        };
-
-        // History rendering logic
-        function renderHistory() {
-            if(!historyList) return;
-            
-            const searchTerm = historySearchInput.value.toLowerCase();
-            const statusFilter = historyStatusFilter.value;
-            const dateStart = historyDateStart.value;
-            const dateEnd = historyDateEnd.value;
-            
-            const getTimestamp = (msg) => new Date(`${msg.date}T${msg.time}`).getTime();
-
-            let historyData = allMessages.filter(msg => {
-                let isHistoryItem = false;
-                if (statusFilter === 'all') isHistoryItem = msg.status === 'sent' || msg.status === 'skipped' || msg.isPostponed;
-                else if (statusFilter === 'sent') isHistoryItem = msg.status === 'sent';
-                else if (statusFilter === 'skipped') isHistoryItem = msg.status === 'skipped';
-                else if (statusFilter === 'postponed') isHistoryItem = msg.isPostponed === true;
-                
-                if(!isHistoryItem) return false;
-                if (dateStart && msg.date < dateStart) return false;
-                if (dateEnd && msg.date > dateEnd) return false;
-
-                const name = (msg.name || '').toLowerCase();
-                const recipient = (msg.recipient || '').toLowerCase();
-                return name.includes(searchTerm) || recipient.includes(searchTerm);
-            });
-
-            historyData.sort((a, b) => {
-                const timeA = a.actionAt ? a.actionAt.toMillis() : getTimestamp(a);
-                const timeB = b.actionAt ? b.actionAt.toMillis() : getTimestamp(b);
-                return timeB - timeA;
-            });
-
-            historyCount.textContent = historyData.length;
-
-            const emptyHistoryHTML = `
-                <div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-50">
-                    <i class="ph ph-magnifying-glass text-4xl mb-2"></i>
-                    <p>No se encontraron resultados</p>
-                </div>
-            `;
-
-            if (historyData.length === 0) {
-                historyList.innerHTML = emptyHistoryHTML;
-            } else {
-                historyList.innerHTML = historyData.map(msg => createMessageCard(msg, false)).join('');
-            }
-        }
-
-        if(historySearchInput) historySearchInput.addEventListener('input', renderHistory);
-        if(historyStatusFilter) historyStatusFilter.addEventListener('change', renderHistory);
-        if(historyDateStart) historyDateStart.addEventListener('change', renderHistory);
-        if(historyDateEnd) historyDateEnd.addEventListener('change', renderHistory);
-
-        function renderSidebarList(filterText = '') {
-            if(!sidebarMessageList) return;
-            const filterLower = filterText.toLowerCase();
-            
-            const pending = allMessages.filter(m => m.status !== 'sent');
-            const getTimestamp = (msg) => new Date(`${msg.date}T${msg.time}`).getTime();
-            pending.sort((a, b) => getTimestamp(a) - getTimestamp(b));
-            
-            const filtered = pending.filter(msg => {
-                const name = (msg.name || '').toLowerCase();
-                return name.includes(filterLower);
-            });
-            
-            if(filtered.length === 0) {
-                sidebarMessageList.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No hay mensajes.</p>';
-                return;
-            }
-            
-            sidebarMessageList.innerHTML = filtered.map(msg => `
-                <div class="p-3 bg-white border border-gray-100 rounded-lg shadow-sm transition-colors border-l-4 border-l-green-500 flex flex-col gap-1">
-                    <p class="text-sm font-semibold text-gray-800 truncate" title="${msg.name || 'Sin nombre'}">${msg.name || 'Sin nombre'}</p>
-                    <p class="text-xs text-gray-500 flex justify-between items-center">
-                        <span class="truncate pr-2">${msg.recipient}</span>
-                        <span class="text-amber-600 font-medium whitespace-nowrap">${formatDate(msg.date)}</span>
-                    </p>
-                </div>
-            `).join('');
-        }
-
-        if(sidebarSearch) {
-            sidebarSearch.addEventListener('input', (e) => {
-                renderSidebarList(e.target.value);
-            });
-        }
-
-        function createMessageCard(msg, isPending) {
-            let urgencyClass = 'border-gray-200 bg-gray-50';
-            let badgeClass = 'bg-green-100 text-green-700';
-            let iconClass = 'ph-check-circle text-green-500';
-            let moraBadge = '';
-
-            if (isPending) {
-                urgencyClass = 'border-amber-200 bg-amber-50/30';
-                badgeClass = 'bg-amber-100 text-amber-700';
-                iconClass = 'ph-clock text-amber-500';
-                
-                const todayStr = new Date().toISOString().split('T')[0];
-                if (msg.date < todayStr) {
-                    urgencyClass = 'border-red-300 bg-red-50/50 shadow-sm shadow-red-100';
-                    badgeClass = 'bg-red-100 text-red-700';
-                    iconClass = 'ph-warning text-red-500 animate-pulse';
-                    moraBadge = `<span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse border border-red-600 shadow-sm ml-2 whitespace-nowrap shrink-0"><i class="ph-fill ph-warning-circle"></i> En mora de envío</span>`;
-                } else if (msg.date === todayStr) {
-                    urgencyClass = 'border-blue-200 bg-blue-50/40 shadow-sm shadow-blue-50';
-                    badgeClass = 'bg-blue-100 text-blue-700';
-                    iconClass = 'ph-clock-user text-blue-500';
-                }
-            }
-
-            const safeText = msg.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            const safeRecipient = msg.recipient.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-            const phoneMatch = safeRecipient.match(/[\+\d\s-]{8,}/);
-            const purePhone = phoneMatch ? phoneMatch[0].replace(/[^\d+]/g, '') : '';
-            const waLink = purePhone 
-                ? `https://wa.me/${purePhone.replace('+', '')}?text=${encodeURIComponent(msg.text)}` 
-                : `https://web.whatsapp.com/send?text=${encodeURIComponent(msg.text)}`;
-
-            let recBadge = '';
-            if(msg.isRecurring && msg.frequency) {
-                const freqMap = { 'daily': 'Diaria', 'weekly': 'Semanal', 'monthly': 'Mensual', 'yearly': 'Anual' };
-                const endText = msg.endDate ? ` (hasta ${formatDate(msg.endDate)})` : '';
-                recBadge = `<span class="bg-blue-100 text-blue-700 text-[9px] md:text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap shrink-0"><i class="ph ph-arrows-clockwise"></i> ${freqMap[msg.frequency]}${endText}</span>`;
-            }
-            
-            let postBadge = '';
-            if(msg.isPostponed) {
-                postBadge = `<span class="bg-purple-100 text-purple-700 text-[9px] md:text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap shrink-0"><i class="ph ph-calendar-plus"></i> Posp. ${msg.totalPostponedDays || 0}d</span>`;
-            }
-            
-            let historyStatusBadge = '';
-            if(!isPending) {
-                if(msg.status === 'sent') historyStatusBadge = `<span class="bg-green-100 text-green-700 text-[10px] md:text-xs font-bold px-2 py-0.5 md:py-1 rounded-md flex items-center gap-1"><i class="ph ph-check-circle"></i> Enviado</span>`;
-                else if(msg.status === 'skipped') historyStatusBadge = `<span class="bg-gray-200 text-gray-700 text-[10px] md:text-xs font-bold px-2 py-0.5 md:py-1 rounded-md flex items-center gap-1"><i class="ph ph-prohibit"></i> Omitido</span>`;
-                else if(msg.status === 'pending' && msg.isPostponed) historyStatusBadge = `<span class="bg-amber-100 text-amber-700 text-[10px] md:text-xs font-bold px-2 py-0.5 md:py-1 rounded-md flex items-center gap-1"><i class="ph ph-clock"></i> Pendiente (Pospuesto)</span>`;
-            }
-
-            const copyPhoneBtn = purePhone ? `<button onclick="copyPhoneNumber('${purePhone}')" title="Copiar número (${purePhone})" class="p-0.5 md:p-1 bg-white shadow-sm border border-gray-200 rounded text-gray-500 hover:text-teal-600 hover:border-teal-200 transition-colors shrink-0"><i class="ph ph-copy text-[11px] md:text-xs"></i></button>` : '';
-
-            // Versión ultra compacta exclusiva para Vista Móvil (Pendientes e Historial)
-            if (isSimulatedMobile) {
-                const mobileMoraBadge = isPending && msg.date < new Date().toISOString().split('T')[0]
-                    ? `<span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-tight flex items-center gap-0.5 shrink-0"><i class="ph-fill ph-warning-circle"></i> Mora</span>`
-                    : '';
-
-                const mobileDateBadge = isPending
-                    ? `<span class="${badgeClass} text-[9px] font-semibold px-1.5 py-0.5 rounded flex items-center gap-1 whitespace-nowrap shrink-0">
-                           <i class="ph ${iconClass}"></i>
-                           ${formatDate(msg.date)} · ${formatTime(msg.time)}
-                       </span>`
-                    : `<span class="text-gray-500 text-[9px] font-medium flex items-center gap-1 whitespace-nowrap shrink-0">
-                           <i class="ph ph-calendar"></i> ${formatDate(msg.date)} · ${formatTime(msg.time)}
-                       </span>`;
-
-                const mobileFooterActions = isPending
-                    ? `<div class="mt-2 pt-1.5 border-t border-gray-200/60 grid grid-cols-3 gap-1">
-                           <a href="${waLink}" target="_blank" class="py-1 px-1.5 bg-[#25D366] hover:bg-[#128C7E] text-white text-[10px] font-semibold rounded-md flex items-center justify-center gap-1 transition-colors shadow-sm">
-                               <i class="ph-bold ph-whatsapp-logo text-xs"></i> Enviar
-                           </a>
-                           <button onclick="markAsSent('${msg.id}')" class="py-1 px-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-semibold rounded-md flex items-center justify-center gap-1 transition-colors shadow-sm">
-                               <i class="ph-bold ph-check text-xs"></i> Listo
-                           </button>
-                           <button onclick="openEditModal('${msg.id}')" class="py-1 px-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] font-semibold rounded-md flex items-center justify-center gap-1 transition-colors border border-purple-200">
-                               <i class="ph ph-pencil-simple text-xs"></i> Editar
-                           </button>
-                           <button onclick="openPostponeModal('${msg.id}')" class="py-1 px-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-semibold rounded-md flex items-center justify-center gap-1 transition-colors border border-blue-200">
-                               <i class="ph ph-calendar-plus text-xs"></i> Posponer
-                           </button>
-                           <button onclick="skipMessage('${msg.id}')" class="py-1 px-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-[10px] font-semibold rounded-md flex items-center justify-center gap-1 transition-colors border border-gray-200">
-                               <i class="ph ph-prohibit text-xs"></i> Omitir
-                           </button>
-                           <button onclick="goToCampaign('${encodeURIComponent(msg.name || '')}')" class="py-1 px-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 text-[10px] font-semibold rounded-md flex items-center justify-center gap-1 transition-colors border border-teal-200">
-                               <i class="ph ph-presentation-chart text-xs"></i> Campaña
-                           </button>
-                       </div>`
-                    : `<div class="mt-2 pt-1.5 border-t border-gray-200/60 flex justify-between items-center">
-                           <div>${historyStatusBadge}</div>
-                           <button onclick="deleteMessage('${msg.id}')" class="text-red-500 hover:text-red-700 text-[11px] font-medium flex items-center gap-1 transition-colors">
-                               <i class="ph ph-trash"></i> Eliminar
-                           </button>
-                       </div>`;
-
-                return `
-                    <div class="border ${urgencyClass} rounded-xl p-2 transition-all relative">
-                        <div class="flex justify-between items-start gap-1.5 mb-1">
-                            <h3 class="font-bold text-gray-900 text-xs leading-tight truncate flex-1" title="${msg.name ? msg.name.replace(/</g, "&lt;") : 'Sin nombre'}">
-                                ${msg.name ? msg.name.replace(/</g, "&lt;") : 'Sin nombre'}
-                            </h3>
-                            ${mobileDateBadge}
-                        </div>
-
-                        <div class="text-[11px] font-medium text-gray-700 flex items-center gap-1 flex-wrap mb-1.5">
-                            <i class="ph ph-user-circle text-gray-400 text-xs shrink-0"></i>
-                            <span class="truncate max-w-[180px]">${safeRecipient}</span>
-                            ${copyPhoneBtn}
-                            ${mobileMoraBadge}
-                            ${recBadge}
-                            ${postBadge}
-                        </div>
-
-                        <div class="bg-white/80 border border-gray-100 rounded-lg p-1.5 text-[11px] leading-snug text-gray-700 whitespace-pre-wrap max-h-16 overflow-y-auto custom-scrollbar relative pr-6">
-                            ${safeText}
-                            ${isPending ? `<button onclick="copyMessage('${msg.id}')" title="Copiar Mensaje" class="absolute top-1 right-1 p-0.5 bg-white shadow-sm border border-gray-200 rounded text-gray-500 hover:text-gray-800 transition-colors"><i class="ph ph-copy text-[11px]"></i></button>` : ''}
-                        </div>
-
-                        ${mobileFooterActions}
-                    </div>
-                `;
-            }
-
-            const actions = isPending ? `
-                <div class="mt-3 pt-2.5 border-t border-gray-200/60 grid grid-cols-2 sm:flex gap-1.5 md:gap-2 flex-wrap">
-                    <a href="${waLink}" target="_blank" class="col-span-1 sm:flex-1 sm:min-w-[100px] py-1.5 md:py-2 px-2.5 bg-[#25D366] hover:bg-[#128C7E] text-white text-xs md:text-sm font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm">
-                        <i class="ph ph-whatsapp-logo text-base md:text-lg"></i> Enviar
-                    </a>
-                    <button onclick="markAsSent('${msg.id}')" class="col-span-1 sm:flex-1 sm:min-w-[85px] py-1.5 md:py-2 px-2.5 bg-green-600 hover:bg-green-700 text-white text-xs md:text-sm font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm">
-                        <i class="ph ph-check"></i> Listo
-                    </button>
-                    <button onclick="openEditModal('${msg.id}')" class="col-span-1 sm:flex-1 sm:min-w-[85px] py-1.5 md:py-2 px-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs md:text-sm font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors border border-purple-200">
-                        <i class="ph ph-pencil-simple"></i> Editar
-                    </button>
-                    <button onclick="openPostponeModal('${msg.id}')" class="col-span-1 sm:flex-1 sm:min-w-[85px] py-1.5 md:py-2 px-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs md:text-sm font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors border border-blue-200">
-                        <i class="ph ph-calendar-plus"></i> Posponer
-                    </button>
-                    <button onclick="skipMessage('${msg.id}')" class="col-span-1 sm:flex-1 sm:min-w-[85px] py-1.5 md:py-2 px-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs md:text-sm font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors border border-gray-200">
-                        <i class="ph ph-prohibit"></i> Omitir
-                    </button>
-                    <button onclick="goToCampaign('${encodeURIComponent(msg.name || '')}')" class="col-span-1 sm:flex-1 sm:min-w-[120px] py-1.5 md:py-2 px-2.5 bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs md:text-sm font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors border border-teal-200">
-                        <i class="ph ph-presentation-chart"></i> Ir a campaña
-                    </button>
-                </div>
-            ` : `
-                <div class="mt-3 pt-2 border-t border-gray-200/60 flex justify-between items-center">
-                    <div>${historyStatusBadge}</div>
-                    <button onclick="deleteMessage('${msg.id}')" class="text-red-500 hover:text-red-700 text-xs md:text-sm font-medium flex items-center gap-1 transition-colors">
-                        <i class="ph ph-trash"></i> Eliminar
-                    </button>
-                </div>
-            `;
-
-            return `
-                <div class="border ${urgencyClass} rounded-xl p-3 md:p-4 transition-all hover:shadow-sm relative">
-                    <div class="flex justify-between items-start mb-1.5 flex-wrap gap-1.5">
-                        <div class="flex-1 min-w-[160px] pr-2">
-                            <h3 class="font-bold text-gray-900 text-sm md:text-lg flex items-center gap-1.5 mb-0.5">
-                                ${msg.name ? msg.name.replace(/</g, "&lt;").replace(/>/g, "&gt;") : 'Sin nombre'}
-                            </h3>
-                            <div class="text-xs md:text-sm font-medium text-gray-700 flex items-center gap-1.5 flex-wrap overflow-hidden">
-                                <i class="ph ph-user-circle text-gray-400 text-base shrink-0"></i>
-                                <span class="truncate">${safeRecipient}</span>
-                                ${copyPhoneBtn}
-                                ${recBadge}
-                                ${postBadge}
-                                ${moraBadge}
-                            </div>
-                        </div>
-                        ${isPending ? `
-                        <span class="${badgeClass} text-[10px] md:text-xs font-medium px-2 py-0.5 md:py-1 rounded-md flex items-center gap-1 whitespace-nowrap shrink-0">
-                            <i class="ph ${iconClass}"></i>
-                            ${formatDate(msg.date)} - ${formatTime(msg.time)}
-                        </span>
-                        ` : `
-                        <span class="text-gray-500 text-[10px] md:text-xs font-medium flex items-center gap-1 whitespace-nowrap shrink-0">
-                            <i class="ph ph-calendar"></i> Prog: ${formatDate(msg.date)}
-                        </span>
-                        `}
-                    </div>
-                    <div class="bg-white/70 border border-gray-100 rounded-lg p-2.5 md:p-3 mt-1.5 text-xs md:text-sm text-gray-700 whitespace-pre-wrap max-h-24 md:max-h-32 overflow-y-auto custom-scrollbar relative pr-8">
-                        ${safeText}
-                        ${isPending ? `<button onclick="copyMessage('${msg.id}')" title="Copiar Mensaje" class="absolute top-1.5 right-1.5 p-1 bg-white shadow-sm border border-gray-200 rounded text-gray-500 hover:text-gray-800 transition-colors"><i class="ph ph-copy text-xs md:text-sm"></i></button>` : ''}
-                    </div>
-                    ${actions}
-                </div>
-            `;
-        }
-
-        window.copyMessage = (id) => {
-            const msg = allMessages.find(m => m.id === id);
-            if (!msg) return;
-            fallbackCopyTextToClipboard(msg.text);
-        };
-
-        window.copyPhoneNumber = (phone) => {
-            if (!phone) return;
-            const textArea = document.createElement("textarea");
-            textArea.value = phone;
-            textArea.style.top = "0";
-            textArea.style.left = "0";
-            textArea.style.position = "fixed";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) showToast(`Número ${phone} copiado`);
-                else showToast("No se pudo copiar el número", "error");
-            } catch (err) {
-                showToast("Error al copiar", "error");
-            }
-            document.body.removeChild(textArea);
-        };
-
-        window.goToCampaign = (encodedName) => {
-            const name = decodeURIComponent(encodedName);
-            switchView('campaigns');
-            setCampaignMode('grouped');
-            const searchInput = document.getElementById('campaign-search');
-            if (searchInput) {
-                searchInput.value = name;
-                renderCampaigns();
-            }
-        };
-
-        document.getElementById('recipient').addEventListener('input', (e) => {
-            const val = e.target.value;
-            const btn = document.getElementById('btn-copy-recipient');
-            if (val.includes('+') || /\d{7,}/.test(val)) btn.classList.remove('hidden');
-            else btn.classList.add('hidden');
-        });
-
-        // Lógica para agregar múltiples destinatarios
-        const renderSelectedRecipients = () => {
-            const container = document.getElementById('selected-recipients-container');
-            if (!container) return;
-            if (selectedRecipients.length === 0) {
-                container.innerHTML = '';
-                return;
-            }
-            container.innerHTML = selectedRecipients.map((rec, idx) => `
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-teal-50 text-teal-800 border border-teal-200 shadow-sm">
-                    <i class="ph-fill ph-user-circle text-teal-600 text-sm"></i>
-                    <span>${rec.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</span>
-                    <button type="button" onclick="removeRecipient(${idx})" class="text-teal-500 hover:text-red-500 ml-1 focus:outline-none transition-colors" title="Quitar">
-                        <i class="ph-bold ph-x"></i>
-                    </button>
-                </span>
-            `).join('');
-        };
-
-        window.removeRecipient = (index) => {
-            selectedRecipients.splice(index, 1);
-            renderSelectedRecipients();
-        };
-
-        const addRecipientToList = () => {
-            const input = document.getElementById('recipient');
-            const val = input.value.trim();
-            if (!val) return;
-            
-            if (!selectedRecipients.includes(val)) {
-                selectedRecipients.push(val);
-                renderSelectedRecipients();
-                input.value = '';
-                document.getElementById('btn-copy-recipient').classList.add('hidden');
-            } else {
-                showToast("Este destinatario ya está en la lista", "info");
-                input.value = '';
-            }
-        };
-
-        document.getElementById('btn-add-recipient').addEventListener('click', addRecipientToList);
-        
-        document.getElementById('recipient').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                addRecipientToList();
-            }
-        });
-
-        document.getElementById('btn-copy-recipient').addEventListener('click', () => {
-            const val = document.getElementById('recipient').value;
-            const match = val.match(/\+?\d+/g); 
-            if (match) {
-                const numberToCopy = match.join(''); 
-                const ta = document.createElement("textarea");
-                ta.value = numberToCopy; ta.style.position = "fixed"; ta.style.left = "-9999px";
-                document.body.appendChild(ta); ta.focus(); ta.select();
-                try { document.execCommand('copy'); showToast("Número copiado"); } catch (e) {}
-                document.body.removeChild(ta);
-            }
-        });
-
-        function fallbackCopyTextToClipboard(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.top = "0";
-            textArea.style.left = "0";
-            textArea.style.position = "fixed";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) showToast("Mensaje copiado al portapapeles");
-                else showToast("No se pudo copiar", "error");
-            } catch (err) {
-                showToast("Error al copiar", "error");
-            }
-            document.body.removeChild(textArea);
-        }
-
-        window.openEditModal = (id, campaignName = null) => {
-            const msg = allMessages.find(m => m.id === id);
-            if(!msg) return;
-            
-            currentEditCampaignName = campaignName;
-            
-            document.getElementById('edit-msg-id').value = id;
-            document.getElementById('edit-msg-name').value = msg.name || '';
-            document.getElementById('edit-msg-recipient').value = msg.recipient || '';
-            document.getElementById('edit-msg-date').value = msg.date || '';
-            document.getElementById('edit-msg-time').value = msg.time || '';
-            document.getElementById('edit-msg-text').value = msg.text || '';
-            
-            document.getElementById('edit-modal').classList.replace('hidden', 'flex');
-        };
-
-        window.closeEditModal = () => {
-            currentEditCampaignName = null;
-            document.getElementById('edit-modal').classList.replace('flex', 'hidden');
-        };
-
-        const editSaveBtn = document.getElementById('edit-save-btn');
-        if(editSaveBtn) {
-            editSaveBtn.addEventListener('click', async () => {
-                if (!currentUserId) return;
-                
-                const id = document.getElementById('edit-msg-id').value;
-                const name = document.getElementById('edit-msg-name').value.trim();
-                const recipient = document.getElementById('edit-msg-recipient').value.trim();
-                const date = document.getElementById('edit-msg-date').value;
-                const time = document.getElementById('edit-msg-time').value;
-                const text = document.getElementById('edit-msg-text').value.trim();
-
-                if(!name || !recipient || !date || !time || !text) {
-                    showToast("Todos los campos son requeridos", "error");
-                    return;
-                }
-                
-                const originalBtnContent = editSaveBtn.innerHTML;
-                editSaveBtn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i> Guardando...';
-                editSaveBtn.disabled = true;
-                
-                try {
-                    if (currentEditCampaignName) {
-                        // Edit all future messages for this campaign
-                        const pendingToUpdate = allMessages.filter(m => m.name === currentEditCampaignName && m.status === 'pending');
-                        const promises = pendingToUpdate.map(msg => {
-                            const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', msg.id);
-                            return updateDoc(docRef, { name, recipient, date: msg.date, time, text, actionAt: serverTimestamp() });
-                        });
-                        await Promise.all(promises);
-                        showToast(`Se actualizaron ${pendingToUpdate.length} mensajes programados`);
-                    } else {
-                        // Normal single edit
-                        const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', id);
-                        await updateDoc(docRef, {
-                            name, recipient, date, time, text,
-                            actionAt: serverTimestamp()
-                        });
-                        showToast("Mensaje actualizado correctamente");
-                    }
-                    closeEditModal();
-                } catch (err) {
-                    console.error("Error updating:", err);
-                    showToast("Error al actualizar.", "error");
-                } finally {
-                    editSaveBtn.innerHTML = originalBtnContent;
-                    editSaveBtn.disabled = false;
-                }
-            });
-        }
-
-        window.markAsSent = async (id) => {
-            if (!currentUserId) return; 
-            try {
-                const msg = allMessages.find(m => m.id === id);
-                if(!msg) return;
-
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', id);
-                await updateDoc(docRef, {
-                    status: 'sent',
-                    actionAt: serverTimestamp()
-                });
-
-                showToast("Marcado como enviado");
-            } catch (err) {
-                console.error("Error updating:", err);
-                showToast("Error al actualizar.", "error");
-            }
-        };
-
-        window.skipMessage = async (id) => {
-            if (!currentUserId) return; 
-            try {
-                const msg = allMessages.find(m => m.id === id);
-                if(!msg) return;
-
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', id);
-                await updateDoc(docRef, {
-                    status: 'skipped',
-                    actionAt: serverTimestamp()
-                });
-
-                showToast("Mensaje omitido", "info");
-            } catch (err) {
-                console.error("Error skipping:", err);
-                showToast("Error al omitir.", "error");
-            }
-        };
-
-        window.openPostponeModal = (id) => {
-            messageToPostpone = id;
-            document.getElementById('postpone-days-input').value = '1';
-            document.getElementById('postpone-modal').classList.replace('hidden', 'flex');
-        };
-
-        window.closePostponeModal = () => {
-            messageToPostpone = null;
-            document.getElementById('postpone-modal').classList.replace('flex', 'hidden');
-        };
-
-        document.getElementById('postpone-confirm-btn').addEventListener('click', async () => {
-            if (!currentUserId || !messageToPostpone) return;
-            
-            const daysToPostpone = parseInt(document.getElementById('postpone-days-input').value, 10);
-            if (isNaN(daysToPostpone) || daysToPostpone < 1) {
-                showToast("Ingresa un número de días válido", "error");
-                return;
-            }
-
-            try {
-                const msg = allMessages.find(m => m.id === messageToPostpone);
-                if(!msg) return;
-
-                const currentDateObj = new Date(msg.date + 'T12:00:00');
-                currentDateObj.setDate(currentDateObj.getDate() + daysToPostpone);
-                const newDateStr = currentDateObj.toISOString().split('T')[0];
-
-                const currentPostponedDays = msg.totalPostponedDays || 0;
-
-                const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', messageToPostpone);
-                await updateDoc(docRef, {
-                    date: newDateStr,
-                    isPostponed: true,
-                    totalPostponedDays: currentPostponedDays + daysToPostpone,
-                    actionAt: serverTimestamp()
-                });
-
-                showToast(`Mensaje pospuesto por ${daysToPostpone} día(s)`, "info");
-                closePostponeModal();
-
-            } catch (err) {
-                console.error("Error postponing:", err);
-                showToast("Error al posponer.", "error");
-            }
-        });
-
-        window.deleteMessage = async (id) => {
-            if (!currentUserId) return; 
-            
-            const confirmed = await showConfirmDialog("¿Seguro que deseas eliminar este registro?");
-            if(confirmed) {
-                try {
-                    const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', id);
-                    await deleteDoc(docRef);
-                    showToast("Registro eliminado");
-                } catch (err) {
-                    console.error("Error deleting:", err);
-                    showToast("Error al eliminar.", "error");
-                }
-            }
-        };
-
-        // Test Data Seeder (30+ mensajes con 2 contactos para probar todos los estados y filtros)
-        window.seedTestData = async () => {
-            if (!currentUserId) return;
-            showToast("Generando más de 30 registros de prueba...", "info");
-            try {
-                const batch = writeBatch(db);
-                const contactsRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'contacts');
-                const messagesRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'messages');
-                
-                const c1Name = "Kevin Mateo (Prueba)";
-                const c1Phone = "+573001234567";
-                const c1Full = `${c1Name} | ${c1Phone}`;
-
-                const c2Name = "Cliente VIP";
-                const c2Phone = "+573109876543";
-                const c2Full = `${c2Name} | ${c2Phone}`;
-
-                // 1. Agregar los 2 contactos
-                batch.set(doc(contactsRef), { name: c1Name, phone: c1Phone });
-                batch.set(doc(contactsRef), { name: c2Name, phone: c2Phone });
-
-                const getOffsetDate = (daysOffset = 0, monthsOffset = 0) => {
-                    const d = new Date();
-                    d.setHours(12, 0, 0, 0);
-                    if (daysOffset !== 0) d.setDate(d.getDate() + daysOffset);
-                    if (monthsOffset !== 0) d.setMonth(d.getMonth() + monthsOffset);
-                    return d.toISOString().split('T')[0];
-                };
-
-                let totalCreated = 0;
-
-                // 2. Campaña 1: "391 - Cobro Mensual Arriendo" (Recurrente Mensual - 12 mensajes: 2 enviados, 1 hoy, 9 futuros)
-                const endCamp1 = getOffsetDate(0, 9);
-                for (let i = -2; i <= 9; i++) {
-                    const status = i < 0 ? 'sent' : 'pending';
-                    const payload = {
-                        name: "391 - Cobro Mensual Arriendo",
-                        recipient: c1Full,
-                        date: getOffsetDate(0, i),
-                        time: "09:00",
-                        text: "Buenos días Kevin, ¿cómo ha estado?\n\nLe recuerdo amablemente el pago de la cuota mensual correspondiente a este mes.",
-                        isRecurring: true,
-                        frequency: "monthly",
-                        endDate: endCamp1,
-                        status: status,
-                        createdAt: serverTimestamp()
-                    };
-                    if (status === 'sent') payload.actionAt = serverTimestamp();
-                    batch.set(doc(messagesRef), payload);
-                    totalCreated++;
-                }
-
-                // 3. Campaña 2: "266 - Seguimiento Semanal VIP" (Recurrente Semanal a ambos contactos - 12 mensajes: 2 enviados, 2 hoy, 8 futuros)
-                const endCamp2 = getOffsetDate(28, 0);
-                [c1Full, c2Full].forEach((rec, idx) => {
-                    for (let w = -1; w <= 4; w++) {
-                        const status = w < 0 ? 'sent' : 'pending';
-                        const payload = {
-                            name: "266 - Seguimiento Semanal VIP",
-                            recipient: rec,
-                            date: getOffsetDate(w * 7, 0),
-                            time: idx === 0 ? "10:30" : "11:00",
-                            text: "¡Hola! Te compartimos el catálogo actualizado de esta semana con descuentos especiales para clientes VIP.",
-                            isRecurring: true,
-                            frequency: "weekly",
-                            endDate: endCamp2,
-                            status: status,
-                            createdAt: serverTimestamp()
-                        };
-                        if (status === 'sent') payload.actionAt = serverTimestamp();
-                        batch.set(doc(messagesRef), payload);
-                        totalCreated++;
-                    }
-                });
-
-                // 4. Campaña 3: "105 - Recordatorio En Mora" (Mensajes atrasados pendientes para probar alertas rojas)
-                [-3, -1].forEach((daysAgo) => {
-                    batch.set(doc(messagesRef), {
-                        name: "105 - Recordatorio En Mora",
-                        recipient: c2Full,
-                        date: getOffsetDate(daysAgo, 0),
-                        time: "15:00",
-                        text: "Hola, notamos que quedó pendiente la confirmación de tu pedido. Por favor avísanos para despacharlo.",
-                        isRecurring: false,
-                        frequency: null,
-                        endDate: null,
-                        status: "pending",
-                        createdAt: serverTimestamp()
-                    });
-                    totalCreated++;
-                });
-
-                // 5. Campaña 4: "Promo Relámpago Completada" (Campaña 100% completada)
-                [c1Full, c2Full].forEach((rec) => {
-                    batch.set(doc(messagesRef), {
-                        name: "Promo Relámpago Completada",
-                        recipient: rec,
-                        date: getOffsetDate(-5, 0),
-                        time: "16:00",
-                        text: "¡Gracias por participar en nuestra jornada especial! Tu bono ya está activo.",
-                        isRecurring: false,
-                        frequency: null,
-                        endDate: null,
-                        status: "sent",
-                        actionAt: serverTimestamp(),
-                        createdAt: serverTimestamp()
-                    });
-                    totalCreated++;
-                });
-
-                // 6. Campaña 5: "Aviso Cancelado" (Mensajes Omitidos para probar filtro Omitidos/Fallidos)
-                [c1Full, c2Full].forEach((rec) => {
-                    batch.set(doc(messagesRef), {
-                        name: "Aviso Cancelado",
-                        recipient: rec,
-                        date: getOffsetDate(-2, 0),
-                        time: "08:00",
-                        text: "Recordatorio de mantenimiento programado.",
-                        isRecurring: false,
-                        frequency: null,
-                        endDate: null,
-                        status: "skipped",
-                        actionAt: serverTimestamp(),
-                        createdAt: serverTimestamp()
-                    });
-                    totalCreated++;
-                });
-
-                // 7. Mensajes Pospuestos (Para probar estado Pospuesto / Pausado)
-                batch.set(doc(messagesRef), {
-                    name: "Reunión Reprogramada",
-                    recipient: c1Full,
-                    date: getOffsetDate(2, 0),
-                    time: "14:30",
-                    text: "Hola Kevin, confirmamos nuestra llamada para revisar los detalles pendientes.",
-                    isRecurring: false,
-                    frequency: null,
-                    endDate: null,
-                    status: "pending",
-                    isPostponed: true,
-                    totalPostponedDays: 3,
-                    actionAt: serverTimestamp(),
-                    createdAt: serverTimestamp()
-                });
-                totalCreated++;
-
-                batch.set(doc(messagesRef), {
-                    name: "Cotización Especial",
-                    recipient: c2Full,
-                    date: getOffsetDate(4, 0),
-                    time: "17:00",
-                    text: "Te envío la cotización ajustada según lo conversado.",
-                    isRecurring: false,
-                    frequency: null,
-                    endDate: null,
-                    status: "pending",
-                    isPostponed: true,
-                    totalPostponedDays: 2,
-                    actionAt: serverTimestamp(),
-                    createdAt: serverTimestamp()
-                });
-                totalCreated++;
-
-                await batch.commit();
-                showToast(`¡Listo! Se crearon ${totalCreated} mensajes y 2 contactos.`);
-            } catch (e) {
-                console.error(e);
-                showToast("Error generando datos.", "error");
-            }
-        };
-
-        // VCF Upload Logic for Google Contacts
-        const vcfUpload = document.getElementById('vcf-upload');
-        if(vcfUpload) {
-            vcfUpload.addEventListener('change', (e) => {
-                if (!currentUserId) return;
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const statusTxt = document.getElementById('upload-status');
-                statusTxt.textContent = "Procesando archivo...";
-                
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    isImportingContacts = true;
-                    const tableBody = document.getElementById('contacts-table-body');
-                    tableBody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-teal-600 font-bold"><i class="ph ph-spinner animate-spin text-xl inline-block mr-2"></i> Optimizando y sincronizando libreta...</td></tr>';
-                    
-                    try {
-                        const vcfText = event.target.result;
-                        const contactsToSave = [];
-                        const blocks = vcfText.split('BEGIN:VCARD');
-                        
-                        blocks.forEach(block => {
-                            if (!block.includes('END:VCARD')) return;
-                            const fnMatch = block.match(/FN:(.*)/);
-                            const name = fnMatch ? fnMatch[1].trim() : 'Desconocido';
-                            const telMatches = [...block.matchAll(/TEL.*:(.*)/g)];
-
-                            if (telMatches.length > 0) {
-                                telMatches.forEach((match, index) => {
-                                    let rawPhone = match[1].trim();
-                                    let phoneDigits = rawPhone.replace(/[^\d+]/g, '');
-                                    
-                                    if (phoneDigits.replace('+', '').length >= 7) { 
-                                        let finalPhone = rawPhone.includes('+') ? rawPhone.replace(/[^\d+]/g, '') : rawPhone.replace(/[^\d]/g, '');
-                                        if (!finalPhone.startsWith('+')) {
-                                            if (finalPhone.length === 10 && finalPhone.startsWith('3')) {
-                                                finalPhone = '+57' + finalPhone;
-                                            } else {
-                                                finalPhone = '+' + finalPhone;
-                                            }
-                                        }
-
-                                        let cName = name + (telMatches.length > 1 ? ` (Nº ${index + 1})` : '');
-                                        contactsToSave.push({ name: cName, phone: finalPhone });
-                                    }
-                                });
-                            }
-                        });
-
-                        if (contactsToSave.length === 0) {
-                            showToast("No se encontraron contactos válidos", "error");
-                            statusTxt.textContent = "Error de formato";
-                            return;
-                        }
-
-                        // --- ELIMINACIÓN EN LOTE (MÁXIMA VELOCIDAD) ---
-                        if (allContacts && allContacts.length > 0) {
-                            statusTxt.textContent = "Limpiando libreta anterior...";
-                            const deleteBatches = [];
-                            for (let i = 0; i < allContacts.length; i += 500) {
-                                const batch = writeBatch(db);
-                                const chunk = allContacts.slice(i, i + 500);
-                                chunk.forEach(c => {
-                                    batch.delete(doc(db, 'artifacts', appId, 'users', currentUserId, 'contacts', c.id));
-                                });
-                                deleteBatches.push(batch.commit());
-                            }
-                            await Promise.all(deleteBatches);
-                        }
-
-                        // --- INSERCIÓN EN LOTE (MÁXIMA VELOCIDAD) ---
-                        statusTxt.textContent = "Guardando nuevos contactos...";
-                        const contactsRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'contacts');
-                        const insertBatches = [];
-                        for (let i = 0; i < contactsToSave.length; i += 500) {
-                            const batch = writeBatch(db);
-                            const chunk = contactsToSave.slice(i, i + 500);
-                            chunk.forEach(data => {
-                                const newDocRef = doc(contactsRef);
-                                batch.set(newDocRef, data);
-                            });
-                            insertBatches.push(batch.commit());
-                        }
-                        await Promise.all(insertBatches);
-
-                        showToast(`¡${contactsToSave.length} contactos actualizados exitosamente!`);
-                        statusTxt.textContent = "Actualización exitosa";
-                    } catch (err) {
-                        console.error(err);
-                        showToast("Error procesando archivo", "error");
-                        statusTxt.textContent = "Error al leer";
-                    } finally {
-                        isImportingContacts = false;
-                        renderContacts();
-                        e.target.value = '';
-                        setTimeout(() => { statusTxt.textContent = ""; }, 4000);
-                    }
-                };
-                reader.readAsText(file);
-            });
-        }
-
-        // Form Submit Handler
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUserId) return;
-
-            const name = document.getElementById('msg-name').value.trim();
-            const pendingInputVal = document.getElementById('recipient').value.trim();
-            const date = document.getElementById('msg-date').value;
-            const time = document.getElementById('msg-time').value;
-            const text = document.getElementById('msg-text').value.trim();
-            
-            const isRecurring = document.getElementById('msg-recurring').checked;
-            const frequency = document.getElementById('msg-frequency').value;
-            const endDate = document.getElementById('msg-end-date').value;
-
-            // Consolidar destinatarios agregados + lo que esté escrito en el input si no se presionó Agregar
-            const finalRecipients = [...selectedRecipients];
-            if (pendingInputVal) {
-                // Soportar también separación por comas o punto y coma si el usuario pegó varios de golpe
-                const splitEntries = pendingInputVal.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
-                splitEntries.forEach(entry => {
-                    if (!finalRecipients.includes(entry)) finalRecipients.push(entry);
-                });
-            }
-
-            if (finalRecipients.length === 0) {
-                showToast("Agrega al menos un destinatario", "error");
-                document.getElementById('recipient').focus();
-                return;
-            }
-
-            if (!date || !time || !text) return;
-            if (isRecurring && !endDate) {
-                showToast("Por favor selecciona una fecha de finalización", "error");
-                return;
-            }
-
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalContent = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i> Guardando...';
-            submitBtn.disabled = true;
-
-            try {
-                const messagesRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'messages');
-                
-                const dates = [];
-                let curr = new Date(date + 'T12:00:00');
-                const end = isRecurring && endDate ? new Date(endDate + 'T23:59:59') : curr;
-
-                if (isRecurring && endDate) {
-                    let maxIterations = 3650; // Seguridad contra bucles infinitos
-                    while (curr <= end && maxIterations > 0) {
-                        dates.push(curr.toISOString().split('T')[0]);
-                        if (frequency === 'daily') curr.setDate(curr.getDate() + 1);
-                        else if (frequency === 'weekly') curr.setDate(curr.getDate() + 7);
-                        else if (frequency === 'monthly') curr.setMonth(curr.getMonth() + 1);
-                        else if (frequency === 'yearly') curr.setFullYear(curr.getFullYear() + 1);
-                        maxIterations--;
-                    }
-                } else {
-                    // Si no se selecciona repetir automáticamente, lo crea por una sola vez
-                    dates.push(date);
-                }
-
-                // Crear registros en lotes (soporta >500 combinaciones de destinatarios x fechas)
-                const allPayloads = [];
-                finalRecipients.forEach(rec => {
-                    dates.forEach(d => {
-                        allPayloads.push({
-                            name,
-                            recipient: rec,
-                            date: d,
-                            time,
-                            text,
-                            isRecurring,
-                            frequency: isRecurring ? frequency : null,
-                            endDate: isRecurring ? endDate : null,
-                            status: 'pending',
-                            createdAt: serverTimestamp()
-                        });
-                    });
-                });
-
-                for (let i = 0; i < allPayloads.length; i += 500) {
-                    const batch = writeBatch(db);
-                    const chunk = allPayloads.slice(i, i + 500);
-                    chunk.forEach(payload => {
-                        batch.set(doc(messagesRef), payload);
-                    });
-                    await batch.commit();
-                }
-                
-                showToast(allPayloads.length > 1 ? `Campaña creada: ${allPayloads.length} mensajes programados` : "Mensaje programado exitosamente");
-                
-                switchView('pending');
-                
-                form.reset();
-                selectedRecipients = [];
-                renderSelectedRecipients();
-                document.getElementById('recurrence-options').classList.add('hidden');
-                document.getElementById('msg-end-date').removeAttribute('required');
-                document.getElementById('msg-date').valueAsDate = new Date();
-                
-            } catch (err) {
-                console.error("Error adding document:", err);
-                showToast("Error al guardar.", "error");
-            } finally {
-                submitBtn.innerHTML = originalContent;
-                submitBtn.disabled = false;
-            }
-        });
-
-        // Setup default form state on load
-        document.addEventListener('DOMContentLoaded', () => {
-            switchView('pending'); 
-            
-            const today = new Date();
-            const localTodayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
-            document.getElementById('msg-date').value = localTodayStr;
-            
-            let h = today.getHours();
-            let m = today.getMinutes();
-            if (m < 30) m = 30;
-            else { m = 0; h = (h + 1) % 24; }
-            document.getElementById('msg-time').value = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-        });
-
-        initialize();
-
-    </script>
-</body>
-</html>
