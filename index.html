@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WhatsApp Scheduler Pro</title>
+
+    <!-- PWA & iOS Native App Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0d9488">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="WaScheduler">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%230d9488'/%3E%3Cstop offset='55%25' stop-color='%23065f46'/%3E%3Cstop offset='100%25' stop-color='%23022c22'/%3E%3C/linearGradient%3E%3ClinearGradient id='ring' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff'/%3E%3Cstop offset='100%25' stop-color='%23a7f3d0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' rx='112' fill='url(%23bg)'/%3E%3Cpath fill='none' stroke='url(%23ring)' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' d='M256 106c-82.8 0-150 67.2-150 150 0 28.6 8 55.3 21.9 78L108 404l72.5-19.3C202.8 398.3 228.5 406 256 406c82.8 0 150-67.2 150-150S338.8 106 256 106z'/%3E%3Cline x1='256' y1='138' x2='256' y2='154' stroke='%236ee7b7' stroke-width='10' stroke-linecap='round'/%3E%3Cline x1='374' y1='256' x2='358' y2='256' stroke='%236ee7b7' stroke-width='10' stroke-linecap='round'/%3E%3Cline x1='256' y1='374' x2='256' y2='358' stroke='%236ee7b7' stroke-width='10' stroke-linecap='round'/%3E%3Cline x1='138' y1='256' x2='154' y2='256' stroke='%236ee7b7' stroke-width='10' stroke-linecap='round'/%3E%3Cpolyline fill='none' stroke='%23ffffff' stroke-width='20' stroke-linecap='round' stroke-linejoin='round' points='198,236 256,260 294,188'/%3E%3Ccircle cx='256' cy='260' r='12' fill='%236ee7b7'/%3E%3Cpolygon fill='%23a7f3d0' points='282,292 346,268 322,332 308,306'/%3E%3C/svg%3E">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
@@ -15,6 +24,7 @@
             height: 100dvh;
             overflow: hidden;
             overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
         }
         
         /* Custom scrollbar for message lists */
@@ -33,7 +43,11 @@
             background: #a8a8a8; 
         }
 
-        /* Safe area para barra inferior en iPhone */
+        /* Safe area para barra superior e inferior en iPhone PWA */
+        .safe-top-header {
+            padding-top: env(safe-area-inset-top);
+            height: calc(3rem + env(safe-area-inset-top));
+        }
         .safe-bottom-nav {
             padding-bottom: calc(0.375rem + env(safe-area-inset-bottom));
         }
@@ -299,11 +313,14 @@
             </div>
         </div>
 
-        <!-- Mobile Header -->
-        <header id="mobile-header" class="md:hidden h-12 bg-white border-b border-gray-200 flex items-center px-3 justify-between shrink-0 z-20">
+        <!-- Mobile Header (Con Safe Area Superior para iPhone PWA) -->
+        <header id="mobile-header" class="md:hidden safe-top-header bg-white border-b border-gray-200 flex items-center px-3 justify-between shrink-0 z-20">
             <div class="flex items-center gap-2">
                 <i class="ph-fill ph-whatsapp-logo text-green-500 text-xl"></i>
                 <span class="font-bold text-sm text-gray-800 tracking-tight">WaScheduler</span>
+                <span id="sync-badge-mobile" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Caché
+                </span>
             </div>
             <div class="flex items-center gap-1.5">
                 <button onclick="setViewportMode('desktop')" id="btn-exit-mobile" class="hidden px-2 py-1 bg-gray-800 text-white text-[11px] font-semibold rounded-lg items-center gap-1" title="Volver a vista escritorio">
@@ -315,8 +332,8 @@
             </div>
         </header>
 
-        <!-- Loading Overlay con Progreso 1% - 100% -->
-        <div id="loading-overlay" class="absolute inset-0 bg-white/95 backdrop-blur-md z-40 flex flex-col items-center justify-center p-6 transition-opacity duration-300">
+        <!-- Loading Overlay con Progreso 1% - 100% (Solo aparece si no hay caché previo) -->
+        <div id="loading-overlay" class="hidden absolute inset-0 bg-white/95 backdrop-blur-md z-40 flex-col items-center justify-center p-6 transition-opacity duration-300">
             <div class="w-16 h-16 rounded-2xl bg-green-50 border border-green-100 flex items-center justify-center mb-4 shadow-sm">
                 <i class="ph-fill ph-whatsapp-logo text-green-500 text-3xl animate-pulse"></i>
             </div>
@@ -387,7 +404,6 @@
                                     <button onclick="toggleCampaignFilter()" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-lg"></i></button>
                                 </div>
                                 <div class="p-4 overflow-y-auto space-y-4 max-h-[60vh] custom-scrollbar">
-                                    <!-- Rango de fechas -->
                                     <div>
                                         <div class="flex justify-between items-center mb-2">
                                             <label class="text-xs font-semibold text-teal-600">Rango de Fechas</label>
@@ -409,7 +425,6 @@
                                             <button onclick="setFilterDateRange(30)" class="px-2 py-1 bg-gray-50 border border-gray-200 rounded text-[10px] font-medium text-gray-600 hover:bg-gray-100">Últimos 30</button>
                                         </div>
                                     </div>
-                                    <!-- Repetición -->
                                     <div>
                                         <div class="flex justify-between items-center mb-2">
                                             <label class="text-xs font-semibold text-teal-600">Tipo de Repetición</label>
@@ -424,7 +439,6 @@
                                             <option value="yearly">Anual</option>
                                         </select>
                                     </div>
-                                    <!-- Estado -->
                                     <div>
                                         <div class="flex justify-between items-center mb-2">
                                             <label class="text-xs font-semibold text-teal-600">Estado de Envío</label>
@@ -449,11 +463,9 @@
                      </div>
                      <!-- Table Header -->
                      <div id="campaign-table-header" class="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-gray-50/80 border border-gray-100 rounded-t-xl text-[11px] font-bold text-gray-500 uppercase tracking-wider shrink-0 mt-2">
-                         <!-- Injected dynamically -->
                      </div>
                      <!-- List -->
                      <div id="campaign-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 md:space-y-0 py-0.5 md:py-0 md:border-x md:border-b md:border-gray-100 md:rounded-b-xl md:px-2 md:pb-2 md:pt-2">
-                         <!-- Items injected here -->
                      </div>
                 </div>
             </div>
@@ -475,14 +487,8 @@
                         <div>
                             <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Destinatarios (Agrega uno o varios)</label>
                             <div class="flex gap-1.5 md:gap-2 relative">
-                                <div class="relative flex-1">
-                                    <input type="text" id="recipient" placeholder="Busca contacto o escribe número..." class="w-full pl-3 pr-9 py-2 md:pl-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" autocomplete="off" />
-                                    <button type="button" id="btn-toggle-contacts-dropdown" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 p-1" title="Ver lista de contactos">
-                                        <i id="contacts-dropdown-caret" class="ph-bold ph-caret-down text-sm transition-transform duration-200"></i>
-                                    </button>
-                                    <!-- Lista desplegable compatible con Safari iOS -->
-                                    <div id="custom-contacts-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 max-h-52 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-xl z-50 divide-y divide-gray-100 custom-scrollbar"></div>
-                                </div>
+                                <input type="text" id="recipient" list="contacts-list" placeholder="Busca contacto o escribe número..." class="flex-1 w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" autocomplete="off" />
+                                <datalist id="contacts-list"></datalist>
                                 <button type="button" id="btn-add-recipient" class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 md:px-4 md:py-2.5 rounded-lg font-medium text-xs md:text-sm transition-colors flex items-center gap-1 shrink-0 shadow-sm">
                                     <i class="ph ph-plus-bold"></i> Agregar
                                 </button>
@@ -571,7 +577,6 @@
                     </div>
 
                     <div id="pending-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 md:space-y-4 pr-0.5 md:pr-2 pb-1">
-                        <!-- Pending items injected here -->
                     </div>
                 </div>
             </div>
@@ -607,7 +612,6 @@
                     </div>
                     
                     <div id="history-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-1.5 md:space-y-4 pr-0.5 md:pr-2 pb-1">
-                        <!-- History items injected here -->
                     </div>
                 </div>
             </div>
@@ -837,6 +841,13 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Registro del Service Worker para funcionamiento PWA Offline
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW:', err));
+            });
+        }
+
         // --- CONFIGURACIÓN DE FIREBASE ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'wa-scheduler-manual-app';
         let firebaseConfig = {
@@ -856,6 +867,14 @@
             console.error("Usando configuración local de Firebase.");
         }
 
+        // Claves de Caché Local Instantáneo
+        const CACHE_KEYS = {
+            UID: 'wascheduler_uid',
+            EMAIL: 'wascheduler_email',
+            MESSAGES: 'wascheduler_messages_cache',
+            CONTACTS: 'wascheduler_contacts_cache'
+        };
+
         // DOM Elements
         const form = document.getElementById('schedule-form');
         const pendingList = document.getElementById('pending-list');
@@ -866,6 +885,7 @@
         const loginScreen = document.getElementById('login-screen');
         const userStatusText = document.getElementById('user-status-text');
         const userEmailDisplay = document.getElementById('user-email-display');
+        const syncBadgeMobile = document.getElementById('sync-badge-mobile');
         
         const historySearchInput = document.getElementById('history-search');
         const historyStatusFilter = document.getElementById('history-filter-status');
@@ -877,7 +897,7 @@
         const contactSearchInput = document.getElementById('contact-search');
         
         let app, db, auth;
-        let currentUserId = null;
+        let currentUserId = localStorage.getItem(CACHE_KEYS.UID) || null;
         let unsubMessages = null;
         let unsubContacts = null;
         let allMessages = [];
@@ -885,6 +905,7 @@
         let selectedRecipients = [];
         let messageToPostpone = null;
         let currentEditCampaignName = null;
+        let hasRenderedFromCache = false;
         
         let isImportingContacts = false;
         let campaignMode = 'grouped';
@@ -903,6 +924,70 @@
             status: 'all'
         };
 
+        // --- CACHÉ LOCAL INSTANTÁNEO ---
+        function loadFromLocalCache() {
+            try {
+                const cachedUid = localStorage.getItem(CACHE_KEYS.UID);
+                const cachedEmail = localStorage.getItem(CACHE_KEYS.EMAIL);
+                const cachedMsgs = localStorage.getItem(CACHE_KEYS.MESSAGES);
+                const cachedContacts = localStorage.getItem(CACHE_KEYS.CONTACTS);
+
+                if (cachedUid && cachedMsgs) {
+                    currentUserId = cachedUid;
+                    allMessages = JSON.parse(cachedMsgs) || [];
+                    allContacts = cachedContacts ? (JSON.parse(cachedContacts) || []) : [];
+                    hasRenderedFromCache = true;
+
+                    if (userEmailDisplay && cachedEmail) userEmailDisplay.textContent = cachedEmail;
+                    userStatusText.textContent = "Sincronizando...";
+                    setSyncStatus('syncing');
+
+                    renderUI();
+                    renderContacts();
+                    return true;
+                }
+            } catch (e) {
+                console.warn("Error leyendo caché local:", e);
+            }
+            return false;
+        }
+
+        function saveToLocalCache() {
+            try {
+                if (!currentUserId) return;
+                localStorage.setItem(CACHE_KEYS.UID, currentUserId);
+                localStorage.setItem(CACHE_KEYS.MESSAGES, JSON.stringify(allMessages));
+                localStorage.setItem(CACHE_KEYS.CONTACTS, JSON.stringify(allContacts));
+            } catch (e) {
+                console.warn("No se pudo guardar en localStorage (cuota excedida):", e);
+            }
+        }
+
+        function clearLocalCache() {
+            localStorage.removeItem(CACHE_KEYS.UID);
+            localStorage.removeItem(CACHE_KEYS.EMAIL);
+            localStorage.removeItem(CACHE_KEYS.MESSAGES);
+            localStorage.removeItem(CACHE_KEYS.CONTACTS);
+            hasRenderedFromCache = false;
+        }
+
+        function setSyncStatus(state) {
+            if (!syncBadgeMobile) return;
+            if (state === 'online') {
+                syncBadgeMobile.className = "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-green-50 text-green-700 border border-green-200";
+                syncBadgeMobile.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> En línea`;
+                userStatusText.textContent = "Conectado";
+            } else if (state === 'syncing') {
+                syncBadgeMobile.className = "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-amber-50 text-amber-700 border border-amber-200";
+                syncBadgeMobile.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Sincronizando`;
+                userStatusText.textContent = "Sincronizando...";
+            } else {
+                syncBadgeMobile.className = "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold bg-gray-100 text-gray-600 border border-gray-200";
+                syncBadgeMobile.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Offline`;
+                userStatusText.textContent = "Modo Offline";
+            }
+        }
+
         function setLoadingProgress(percent, text) {
             currentProgress = Math.max(currentProgress, Math.min(100, Math.round(percent)));
             const bar = document.getElementById('loading-progress-bar');
@@ -915,21 +1000,27 @@
         }
 
         function startDatabaseSyncProgress() {
-            currentProgress = 1;
             initialMessagesLoaded = false;
             initialContactsLoaded = false;
 
+            // Si ya cargamos desde el caché local al instante, sincronizamos silenciosamente en segundo plano
+            if (hasRenderedFromCache) {
+                setSyncStatus('syncing');
+                return;
+            }
+
+            currentProgress = 1;
             const bar = document.getElementById('loading-progress-bar');
             const pctText = document.getElementById('loading-progress-percent');
             if (bar) bar.style.width = '1%';
             if (pctText) pctText.textContent = '1%';
 
             loadingOverlay.classList.remove('hidden', 'opacity-0');
+            loadingOverlay.classList.add('flex');
             setLoadingProgress(5, "Conectando con la base de datos...");
 
             if (loadingInterval) clearInterval(loadingInterval);
 
-            // Avance gradual hasta 95% mientras Firestore descarga los datos
             loadingInterval = setInterval(() => {
                 if (currentProgress < 40) {
                     setLoadingProgress(currentProgress + 2, "Descargando mensajes programados...");
@@ -943,17 +1034,22 @@
 
         function checkInitialDataComplete() {
             if (initialMessagesLoaded && initialContactsLoaded) {
+                setSyncStatus('online');
+                saveToLocalCache();
                 if (loadingInterval) {
                     clearInterval(loadingInterval);
                     loadingInterval = null;
                 }
-                setLoadingProgress(100, "¡Datos cargados correctamente!");
-                setTimeout(() => {
-                    loadingOverlay.classList.add('opacity-0');
+                if (!loadingOverlay.classList.contains('hidden')) {
+                    setLoadingProgress(100, "¡Datos cargados correctamente!");
                     setTimeout(() => {
-                        loadingOverlay.classList.add('hidden');
-                    }, 300);
-                }, 350);
+                        loadingOverlay.classList.add('opacity-0');
+                        setTimeout(() => {
+                            loadingOverlay.classList.add('hidden');
+                            loadingOverlay.classList.remove('flex');
+                        }, 300);
+                    }, 350);
+                }
             }
         }
 
@@ -986,6 +1082,7 @@
                 if (loadingInterval) clearInterval(loadingInterval);
                 if (unsubMessages) { unsubMessages(); unsubMessages = null; }
                 if (unsubContacts) { unsubContacts(); unsubContacts = null; }
+                clearLocalCache();
                 await signOut(auth);
                 allMessages = [];
                 allContacts = [];
@@ -1234,7 +1331,10 @@
             submitBtn.disabled = true;
 
             try {
-                await signInWithEmailAndPassword(auth, email, password);
+                const cred = await signInWithEmailAndPassword(auth, email, password);
+                if (cred.user && cred.user.email) {
+                    localStorage.setItem(CACHE_KEYS.EMAIL, cred.user.email);
+                }
                 document.getElementById('login-password').value = '';
             } catch (err) {
                 console.error("Login Error:", err);
@@ -1254,17 +1354,24 @@
 
         // Firebase Initialization & Auth State Observer
         async function initialize() {
+            // 1. Pintar inmediatamente desde caché local si existe sesión previa
+            const loadedCached = loadFromLocalCache();
+
             if (!firebaseConfig) {
                 showToast("Falta configuración de base de datos.", "error");
-                loadingOverlay.classList.add('hidden');
                 return;
             }
 
-            setLoadingProgress(1, "Verificando sesión...");
+            if (!loadedCached) {
+                loadingOverlay.classList.remove('hidden');
+                loadingOverlay.classList.add('flex');
+                setLoadingProgress(1, "Verificando sesión...");
+            }
 
             const fallbackTimer = setTimeout(() => {
-                if (!currentUserId) {
+                if (!currentUserId && !loadedCached) {
                     loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
                     loginScreen.classList.replace('hidden', 'flex');
                 }
             }, 3500);
@@ -1282,8 +1389,10 @@
                     clearTimeout(fallbackTimer);
                     if (user && !user.isAnonymous) {
                         currentUserId = user.uid;
+                        localStorage.setItem(CACHE_KEYS.UID, user.uid);
+                        if (user.email) localStorage.setItem(CACHE_KEYS.EMAIL, user.email);
+
                         loginScreen.classList.replace('flex', 'hidden');
-                        userStatusText.textContent = "Conectado";
                         if (userEmailDisplay && user.email) {
                             userEmailDisplay.textContent = user.email;
                         }
@@ -1291,8 +1400,10 @@
                         setupRealtimeListener();
                     } else {
                         currentUserId = null;
+                        clearLocalCache();
                         if (loadingInterval) clearInterval(loadingInterval);
                         loadingOverlay.classList.add('hidden');
+                        loadingOverlay.classList.remove('flex');
                         loginScreen.classList.replace('hidden', 'flex');
                     }
                 });
@@ -1300,10 +1411,16 @@
             } catch (error) {
                 clearTimeout(fallbackTimer);
                 console.error("Initialization Error:", error);
-                showToast("Error de conexión.", "error");
-                userStatusText.textContent = "Error";
-                loadingOverlay.classList.add('hidden');
-                loginScreen.classList.replace('hidden', 'flex');
+                if (loadedCached) {
+                    setSyncStatus('offline');
+                    showToast("Trabajando en modo offline con caché local", "info");
+                } else {
+                    showToast("Error de conexión.", "error");
+                    userStatusText.textContent = "Error";
+                    loadingOverlay.classList.add('hidden');
+                    loadingOverlay.classList.remove('flex');
+                    loginScreen.classList.replace('hidden', 'flex');
+                }
             }
         }
 
@@ -1323,17 +1440,18 @@
                     allMessages.push({ id: doc.id, ...doc.data() });
                 });
                 renderUI();
+                saveToLocalCache();
 
                 if (!initialMessagesLoaded) {
                     initialMessagesLoaded = true;
-                    if (!initialContactsLoaded) {
+                    if (!initialContactsLoaded && !hasRenderedFromCache) {
                         setLoadingProgress(Math.max(currentProgress, 55), "Mensajes listos. Cargando contactos...");
                     }
                     checkInitialDataComplete();
                 }
             }, (error) => {
                 console.error("Listen failed:", error);
-                showToast("Sin permisos o error al cargar mensajes.", "error");
+                setSyncStatus('offline');
                 initialMessagesLoaded = true;
                 checkInitialDataComplete();
             });
@@ -1344,10 +1462,11 @@
                     allContacts.push({ id: doc.id, ...doc.data() });
                 });
                 renderContacts();
+                saveToLocalCache();
 
                 if (!initialContactsLoaded) {
                     initialContactsLoaded = true;
-                    if (!initialMessagesLoaded) {
+                    if (!initialMessagesLoaded && !hasRenderedFromCache) {
                         setLoadingProgress(Math.max(currentProgress, 55), "Contactos listos. Cargando mensajes...");
                     }
                     checkInitialDataComplete();
@@ -1375,14 +1494,6 @@
             const popover = document.getElementById('campaign-filter-popover');
             if (filterBtn && popover && !popover.classList.contains('hidden') && !filterBtn.contains(e.target) && !popover.contains(e.target)) {
                 popover.classList.add('hidden');
-            }
-            const customDropdown = document.getElementById('custom-contacts-dropdown');
-            const recipientInput = document.getElementById('recipient');
-            const toggleBtn = document.getElementById('btn-toggle-contacts-dropdown');
-            const caretIcon = document.getElementById('contacts-dropdown-caret');
-            if (customDropdown && !customDropdown.contains(e.target) && e.target !== recipientInput && (!toggleBtn || !toggleBtn.contains(e.target))) {
-                customDropdown.classList.add('hidden');
-                if (caretIcon) caretIcon.classList.remove('rotate-180');
             }
         });
 
@@ -1418,6 +1529,7 @@
             if (isImportingContacts) return;
             
             const tableBody = document.getElementById('contacts-table-body');
+            const datalist = document.getElementById('contacts-list');
             const searchQuery = contactSearchInput ? contactSearchInput.value.toLowerCase() : '';
             
             const filteredContacts = allContacts.filter(c => 
@@ -1432,7 +1544,7 @@
                     <i class="ph ph-users text-4xl mb-2 opacity-50"></i><br>
                     ${allContacts.length > 0 ? 'No se encontraron resultados' : 'No hay contactos guardados'}
                 </td></tr>`;
-                renderCustomContactsDropdown();
+                datalist.innerHTML = '';
                 return;
             }
 
@@ -1503,53 +1615,8 @@
                 `;
             }).join('');
 
-            renderCustomContactsDropdown();
+            datalist.innerHTML = allContacts.map(c => `<option value="${c.name.replace(/</g, "&lt;")}  |  ${c.phone.replace(/</g, "&lt;")}">`).join('');
         }
-
-        function renderCustomContactsDropdown(filterText = '') {
-            const dropdown = document.getElementById('custom-contacts-dropdown');
-            if (!dropdown) return;
-
-            const query = filterText.toLowerCase().trim();
-            const sorted = [...allContacts].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-            const matches = sorted.filter(c =>
-                (c.name && c.name.toLowerCase().includes(query)) ||
-                (c.phone && c.phone.includes(query))
-            );
-
-            if (matches.length === 0) {
-                dropdown.innerHTML = `<div class="px-3 py-2.5 text-xs text-gray-400 text-center">No hay contactos coincidentes</div>`;
-                return;
-            }
-
-            dropdown.innerHTML = matches.map(c => {
-                const label = `${c.name}  |  ${c.phone}`;
-                return `
-                    <button type="button" onclick="selectCustomContact('${encodeURIComponent(label)}')" class="w-full text-left px-3 py-2.5 hover:bg-green-50 active:bg-green-100 transition-colors flex items-center justify-between gap-2">
-                        <span class="text-xs font-semibold text-gray-800 truncate">${c.name.replace(/</g, "&lt;")}</span>
-                        <span class="text-[11px] font-mono text-gray-500 shrink-0">${c.phone.replace(/</g, "&lt;")}</span>
-                    </button>
-                `;
-            }).join('');
-        }
-
-        window.selectCustomContact = (encodedLabel) => {
-            const val = decodeURIComponent(encodedLabel);
-            const dropdown = document.getElementById('custom-contacts-dropdown');
-            const caret = document.getElementById('contacts-dropdown-caret');
-            if (dropdown) dropdown.classList.add('hidden');
-            if (caret) caret.classList.remove('rotate-180');
-
-            if (!selectedRecipients.includes(val)) {
-                selectedRecipients.push(val);
-                renderSelectedRecipients();
-            } else {
-                showToast("Este destinatario ya está en la lista", "info");
-            }
-            const input = document.getElementById('recipient');
-            if (input) input.value = '';
-            document.getElementById('btn-copy-recipient').classList.add('hidden');
-        };
         
         window.toggleContactPopover = (id) => {
             const el = document.getElementById(id);
@@ -2252,8 +2319,8 @@
             });
 
             historyData.sort((a, b) => {
-                const timeA = a.actionAt ? a.actionAt.toMillis() : getTimestamp(a);
-                const timeB = b.actionAt ? b.actionAt.toMillis() : getTimestamp(b);
+                const timeA = a.actionAt && a.actionAt.toMillis ? a.actionAt.toMillis() : getTimestamp(a);
+                const timeB = b.actionAt && b.actionAt.toMillis ? b.actionAt.toMillis() : getTimestamp(b);
                 return timeB - timeA;
             });
 
@@ -2532,48 +2599,12 @@
             }
         };
 
-        const recipientInputEl = document.getElementById('recipient');
-        const toggleDropdownBtn = document.getElementById('btn-toggle-contacts-dropdown');
-        const customDropdownEl = document.getElementById('custom-contacts-dropdown');
-        const dropdownCaretEl = document.getElementById('contacts-dropdown-caret');
-
-        if (toggleDropdownBtn && customDropdownEl) {
-            toggleDropdownBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const isHidden = customDropdownEl.classList.contains('hidden');
-                if (isHidden) {
-                    renderCustomContactsDropdown(recipientInputEl.value);
-                    customDropdownEl.classList.remove('hidden');
-                    if (dropdownCaretEl) dropdownCaretEl.classList.add('rotate-180');
-                } else {
-                    customDropdownEl.classList.add('hidden');
-                    if (dropdownCaretEl) dropdownCaretEl.classList.remove('rotate-180');
-                }
-            });
-        }
-
-        if (recipientInputEl) {
-            recipientInputEl.addEventListener('focus', () => {
-                if (customDropdownEl) {
-                    renderCustomContactsDropdown(recipientInputEl.value);
-                    customDropdownEl.classList.remove('hidden');
-                    if (dropdownCaretEl) dropdownCaretEl.classList.add('rotate-180');
-                }
-            });
-
-            recipientInputEl.addEventListener('input', (e) => {
-                const val = e.target.value;
-                const btn = document.getElementById('btn-copy-recipient');
-                if (val.includes('+') || /\d{7,}/.test(val)) btn.classList.remove('hidden');
-                else btn.classList.add('hidden');
-
-                if (customDropdownEl) {
-                    renderCustomContactsDropdown(val);
-                    customDropdownEl.classList.remove('hidden');
-                    if (dropdownCaretEl) dropdownCaretEl.classList.add('rotate-180');
-                }
-            });
-        }
+        document.getElementById('recipient').addEventListener('input', (e) => {
+            const val = e.target.value;
+            const btn = document.getElementById('btn-copy-recipient');
+            if (val.includes('+') || /\d{7,}/.test(val)) btn.classList.remove('hidden');
+            else btn.classList.add('hidden');
+        });
 
         const renderSelectedRecipients = () => {
             const container = document.getElementById('selected-recipients-container');
@@ -2608,8 +2639,6 @@
                 renderSelectedRecipients();
                 input.value = '';
                 document.getElementById('btn-copy-recipient').classList.add('hidden');
-                if (customDropdownEl) customDropdownEl.classList.add('hidden');
-                if (dropdownCaretEl) dropdownCaretEl.classList.remove('rotate-180');
             } else {
                 showToast("Este destinatario ya está en la lista", "info");
                 input.value = '';
@@ -2923,7 +2952,8 @@
 
             const finalRecipients = [...selectedRecipients];
             if (pendingInputVal) {
-                const splitEntries = pendingInputVal.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
+                const splitEntries = pendingInputVal.split(/[,;
+]+/).map(s => s.trim()).filter(Boolean);
                 splitEntries.forEach(entry => {
                     if (!finalRecipients.includes(entry)) finalRecipients.push(entry);
                 });
