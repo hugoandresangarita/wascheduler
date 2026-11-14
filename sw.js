@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wascheduler-pwa-v2';
+const CACHE_NAME = 'wascheduler-pwa-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -24,29 +24,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Ignorar peticiones de Firebase/Google APIs (las maneja el SDK en tiempo real)
-  if (
-    event.request.url.includes('firestore.googleapis.com') ||
-    event.request.url.includes('identitytoolkit.googleapis.com') ||
-    event.request.url.includes('securetoken.googleapis.com')
-  ) {
+  const url = new URL(event.request.url);
+
+  // NO interceptar peticiones externas (Tailwind, iconos, Google Fonts, Firebase)
+  if (url.origin !== self.location.origin) {
     return;
   }
 
-  // Estrategia Stale-While-Revalidate para apertura instantánea
+  // Network-First para archivos propios: siempre busca lo más reciente y usa caché solo si no hay red
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
-          }
-          return networkResponse;
-        })
-        .catch(() => cachedResponse);
-
-      return cachedResponse || fetchPromise;
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
