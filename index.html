@@ -2,15 +2,19 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>WhatsApp Scheduler Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body {
+        html, body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
+            height: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            overscroll-behavior-y: none;
         }
         
         /* Custom scrollbar for message lists */
@@ -27,6 +31,11 @@
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8; 
+        }
+
+        /* Safe area para barra inferior en iPhone */
+        .safe-bottom-nav {
+            padding-bottom: calc(0.375rem + env(safe-area-inset-bottom));
         }
 
         /* Toast animation */
@@ -162,7 +171,7 @@
         }
     </style>
 </head>
-<body class="text-gray-800 h-screen flex overflow-hidden transition-colors duration-300" id="app-body">
+<body class="text-gray-800 h-[100dvh] flex overflow-hidden transition-colors duration-300" id="app-body">
 
     <!-- Pantalla de Inicio de Sesión (Privada) -->
     <div id="login-screen" class="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-teal-950 z-[100] hidden items-center justify-center p-4">
@@ -180,7 +189,7 @@
                     <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Usuario / Correo</label>
                     <div class="relative">
                         <i class="ph ph-envelope-simple absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
-                        <input type="email" id="login-email" required placeholder="tu-usuario@dominio.com" class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all" autocomplete="username">
+                        <input type="email" id="login-email" required placeholder="tu-usuario@dominio.com" class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all" autocomplete="username">
                     </div>
                 </div>
 
@@ -188,7 +197,7 @@
                     <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">Contraseña</label>
                     <div class="relative">
                         <i class="ph ph-lock-simple absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
-                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all" autocomplete="current-password">
+                        <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:bg-white outline-none transition-all" autocomplete="current-password">
                         <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                             <i id="login-eye-icon" class="ph ph-eye text-lg"></i>
                         </button>
@@ -209,7 +218,7 @@
     </div>
 
     <!-- Contenedor principal adaptativo (permite simular marco móvil en escritorio) -->
-    <div id="device-shell" class="w-full h-full flex overflow-hidden bg-[#f3f4f6] transition-all duration-300 relative">
+    <div id="device-shell" class="w-full h-[100dvh] flex overflow-hidden bg-[#f3f4f6] transition-all duration-300 relative">
 
     <!-- Sidebar / Nav -->
     <aside id="desktop-sidebar" class="w-20 lg:w-72 bg-white border-r border-gray-200 flex flex-col justify-between hidden md:flex z-10 shrink-0">
@@ -272,7 +281,7 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+    <main class="flex-1 flex flex-col h-full min-h-0 overflow-hidden relative">
         
         <!-- Barra de Vista Previa Móvil/Escritorio (Solo visible en pantallas grandes) -->
         <div class="hidden md:flex items-center justify-between bg-gray-900 text-white px-4 py-2 text-xs shrink-0 z-30">
@@ -291,13 +300,13 @@
         </div>
 
         <!-- Mobile Header -->
-        <header id="mobile-header" class="md:hidden h-14 bg-white border-b border-gray-200 flex items-center px-4 justify-between shrink-0 z-20">
+        <header id="mobile-header" class="md:hidden h-12 bg-white border-b border-gray-200 flex items-center px-3 justify-between shrink-0 z-20">
             <div class="flex items-center gap-2">
-                <i class="ph-fill ph-whatsapp-logo text-green-500 text-2xl"></i>
-                <span class="font-bold text-base text-gray-800 tracking-tight">WaScheduler</span>
+                <i class="ph-fill ph-whatsapp-logo text-green-500 text-xl"></i>
+                <span class="font-bold text-sm text-gray-800 tracking-tight">WaScheduler</span>
             </div>
             <div class="flex items-center gap-1.5">
-                <button onclick="setViewportMode('desktop')" id="btn-exit-mobile" class="hidden px-2 py-1.5 bg-gray-800 text-white text-[11px] font-semibold rounded-lg items-center gap-1" title="Volver a vista escritorio">
+                <button onclick="setViewportMode('desktop')" id="btn-exit-mobile" class="hidden px-2 py-1 bg-gray-800 text-white text-[11px] font-semibold rounded-lg items-center gap-1" title="Volver a vista escritorio">
                     <i class="ph ph-desktop text-sm"></i> PC
                 </button>
                 <button onclick="logoutUser()" class="p-1.5 text-gray-500 hover:text-red-600 bg-gray-50 border border-gray-200 rounded-lg" title="Cerrar sesión">
@@ -307,38 +316,38 @@
         </header>
 
         <!-- Loading Overlay -->
-        <div id="loading-overlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+        <div id="loading-overlay" class="absolute inset-0 bg-white/90 backdrop-blur-sm z-40 flex flex-col items-center justify-center">
             <i class="ph ph-spinner-gap text-4xl text-green-500 animate-spin"></i>
-            <p class="mt-4 text-gray-600 font-medium">Cargando tu entorno...</p>
+            <p class="mt-3 text-sm text-gray-600 font-medium">Conectando...</p>
         </div>
 
-        <div id="main-scroll-area" class="flex-1 overflow-y-auto p-4 lg:p-8 pb-24 md:pb-8 custom-scrollbar">
+        <div id="main-scroll-area" class="flex-1 min-h-0 flex flex-col overflow-y-auto p-2.5 md:p-6 lg:p-8 custom-scrollbar">
             
             <!-- Page Header -->
-            <div id="page-header-block" class="mb-4 md:mb-8">
-                <h1 class="text-lg md:text-2xl font-bold text-gray-900" id="page-title">Mensajes Pendientes</h1>
-                <p class="text-[11px] md:text-base text-gray-500 mt-0.5 md:mt-1" id="page-desc">Gestiona tus envíos manuales programados.</p>
+            <div id="page-header-block" class="hidden md:block mb-6 shrink-0">
+                <h1 class="text-2xl font-bold text-gray-900" id="page-title">Mensajes Pendientes</h1>
+                <p class="text-base text-gray-500 mt-1" id="page-desc">Gestiona tus envíos manuales programados.</p>
             </div>
 
             <!-- Campaigns / Overview View -->
             <div id="view-campaigns" class="hidden flex flex-col flex-1 min-h-0 gap-1.5 md:gap-6">
                 <!-- Stats Cards -->
-                <div id="stats-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-1 md:gap-4 shrink-0">
-                    <div onclick="filterFromSummaryCard('all')" id="card-stat-all" class="bg-white p-1.5 md:p-5 rounded-lg md:rounded-2xl border-2 border-teal-500 flex items-center shadow-sm cursor-pointer hover:shadow-md transition-all group" title="Mostrar todas las campañas">
-                        <div class="stat-icon-box w-6 h-6 md:w-12 md:h-12 rounded-full bg-gray-100 group-hover:bg-teal-50 transition-colors flex items-center justify-center mr-1.5 md:mr-4 shrink-0"><i class="ph-fill ph-chat-circle-dots text-gray-600 group-hover:text-teal-600 text-xs md:text-xl"></i></div>
-                        <div class="min-w-0"><p class="stat-val text-xs md:text-2xl font-bold text-gray-900 leading-none" id="camp-total">0</p><p class="text-[8px] md:text-[11px] text-gray-500 group-hover:text-teal-700 uppercase tracking-tight font-semibold mt-0.5 truncate">Todas Campañas</p></div>
+                <div id="stats-grid" class="grid grid-cols-4 md:grid-cols-2 lg:grid-cols-4 gap-1 md:gap-4 shrink-0">
+                    <div onclick="filterFromSummaryCard('all')" id="card-stat-all" class="bg-white p-1.5 md:p-5 rounded-lg md:rounded-2xl border-2 border-teal-500 flex flex-col md:flex-row items-center text-center md:text-left shadow-sm cursor-pointer hover:shadow-md transition-all group" title="Mostrar todas las campañas">
+                        <div class="stat-icon-box w-5 h-5 md:w-12 md:h-12 rounded-full bg-gray-100 group-hover:bg-teal-50 transition-colors flex items-center justify-center mb-0.5 md:mb-0 md:mr-4 shrink-0"><i class="ph-fill ph-chat-circle-dots text-gray-600 group-hover:text-teal-600 text-[11px] md:text-xl"></i></div>
+                        <div class="min-w-0 w-full"><p class="stat-val text-xs md:text-2xl font-bold text-gray-900 leading-none" id="camp-total">0</p><p class="text-[7.5px] md:text-[11px] text-gray-500 group-hover:text-teal-700 uppercase tracking-tight font-semibold mt-0.5 truncate">Todas</p></div>
                     </div>
-                    <div onclick="filterFromSummaryCard('completed')" id="card-stat-completed" class="bg-white p-1.5 md:p-5 rounded-lg md:rounded-2xl border-2 border-transparent hover:border-green-300 flex items-center shadow-sm cursor-pointer hover:shadow-md transition-all group" title="Filtrar campañas completadas">
-                        <div class="stat-icon-box w-6 h-6 md:w-12 md:h-12 rounded-full bg-green-50 group-hover:bg-green-100 transition-colors flex items-center justify-center mr-1.5 md:mr-4 shrink-0"><i class="ph-fill ph-check-circle text-green-500 text-xs md:text-xl"></i></div>
-                        <div class="min-w-0"><p class="stat-val text-xs md:text-2xl font-bold text-gray-900 leading-none" id="camp-completed">0</p><p class="text-[8px] md:text-[11px] text-gray-500 group-hover:text-green-700 uppercase tracking-tight font-semibold mt-0.5 truncate">Completadas</p></div>
+                    <div onclick="filterFromSummaryCard('completed')" id="card-stat-completed" class="bg-white p-1.5 md:p-5 rounded-lg md:rounded-2xl border-2 border-transparent hover:border-green-300 flex flex-col md:flex-row items-center text-center md:text-left shadow-sm cursor-pointer hover:shadow-md transition-all group" title="Filtrar campañas completadas">
+                        <div class="stat-icon-box w-5 h-5 md:w-12 md:h-12 rounded-full bg-green-50 group-hover:bg-green-100 transition-colors flex items-center justify-center mb-0.5 md:mb-0 md:mr-4 shrink-0"><i class="ph-fill ph-check-circle text-green-500 text-[11px] md:text-xl"></i></div>
+                        <div class="min-w-0 w-full"><p class="stat-val text-xs md:text-2xl font-bold text-gray-900 leading-none" id="camp-completed">0</p><p class="text-[7.5px] md:text-[11px] text-gray-500 group-hover:text-green-700 uppercase tracking-tight font-semibold mt-0.5 truncate">Listas</p></div>
                     </div>
-                    <div onclick="switchView('pending')" class="bg-white p-1.5 md:p-5 rounded-lg md:rounded-2xl border-2 border-transparent hover:border-amber-300 flex items-center shadow-sm cursor-pointer hover:shadow-md transition-all group" title="Ir a pendientes de envío">
-                        <div class="stat-icon-box w-6 h-6 md:w-12 md:h-12 rounded-full bg-amber-50 group-hover:bg-amber-100 transition-colors flex items-center justify-center mr-1.5 md:mr-4 shrink-0"><i class="ph-fill ph-clock-countdown text-amber-500 text-xs md:text-xl"></i></div>
-                        <div class="min-w-0"><p class="stat-val text-xs md:text-2xl font-bold text-gray-900 leading-none" id="camp-pending-send">0</p><p class="text-[8px] md:text-[11px] text-gray-500 group-hover:text-amber-700 transition-colors uppercase tracking-tight font-semibold mt-0.5 truncate">Pendientes Envío</p></div>
+                    <div onclick="switchView('pending')" class="bg-white p-1.5 md:p-5 rounded-lg md:rounded-2xl border-2 border-transparent hover:border-amber-300 flex flex-col md:flex-row items-center text-center md:text-left shadow-sm cursor-pointer hover:shadow-md transition-all group" title="Ir a pendientes de envío">
+                        <div class="stat-icon-box w-5 h-5 md:w-12 md:h-12 rounded-full bg-amber-50 group-hover:bg-amber-100 transition-colors flex items-center justify-center mb-0.5 md:mb-0 md:mr-4 shrink-0"><i class="ph-fill ph-clock-countdown text-amber-500 text-[11px] md:text-xl"></i></div>
+                        <div class="min-w-0 w-full"><p class="stat-val text-xs md:text-2xl font-bold text-gray-900 leading-none" id="camp-pending-send">0</p><p class="text-[7.5px] md:text-[11px] text-gray-500 group-hover:text-amber-700 transition-colors uppercase tracking-tight font-semibold mt-0.5 truncate">Pendientes</p></div>
                     </div>
-                    <div onclick="filterFromSummaryCard('scheduled')" id="card-stat-scheduled" class="bg-white p-1.5 md:p-5 rounded-lg md:rounded-2xl border-2 border-transparent hover:border-amber-300 flex items-center shadow-sm cursor-pointer hover:shadow-md transition-all group" title="Filtrar campañas programadas">
-                        <div class="stat-icon-box w-6 h-6 md:w-12 md:h-12 rounded-full bg-amber-50 group-hover:bg-amber-100 transition-colors flex items-center justify-center mr-1.5 md:mr-4 shrink-0"><i class="ph-fill ph-clock text-amber-500 text-xs md:text-xl"></i></div>
-                        <div class="min-w-0"><p class="stat-val text-xs md:text-2xl font-bold text-gray-900 leading-none" id="camp-scheduled">0</p><p class="text-[8px] md:text-[11px] text-gray-500 group-hover:text-amber-700 transition-colors uppercase tracking-tight font-semibold mt-0.5 truncate">Programadas</p></div>
+                    <div onclick="filterFromSummaryCard('scheduled')" id="card-stat-scheduled" class="bg-white p-1.5 md:p-5 rounded-lg md:rounded-2xl border-2 border-transparent hover:border-amber-300 flex flex-col md:flex-row items-center text-center md:text-left shadow-sm cursor-pointer hover:shadow-md transition-all group" title="Filtrar campañas programadas">
+                        <div class="stat-icon-box w-5 h-5 md:w-12 md:h-12 rounded-full bg-amber-50 group-hover:bg-amber-100 transition-colors flex items-center justify-center mb-0.5 md:mb-0 md:mr-4 shrink-0"><i class="ph-fill ph-clock text-amber-500 text-[11px] md:text-xl"></i></div>
+                        <div class="min-w-0 w-full"><p class="stat-val text-xs md:text-2xl font-bold text-gray-900 leading-none" id="camp-scheduled">0</p><p class="text-[7.5px] md:text-[11px] text-gray-500 group-hover:text-amber-700 transition-colors uppercase tracking-tight font-semibold mt-0.5 truncate">Programadas</p></div>
                     </div>
                 </div>
                 
@@ -353,7 +362,7 @@
                      <div id="campaigns-search-row" class="flex gap-1 md:gap-4 mb-1.5 md:mb-4 shrink-0 relative">
                          <div class="flex-1 relative">
                               <i class="ph ph-magnifying-glass absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs md:text-lg"></i>
-                              <input type="text" id="campaign-search" placeholder="Buscar campaña o contacto..." class="w-full pl-6 md:pl-11 pr-2 py-1 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl text-[11px] md:text-sm focus:ring-2 focus:ring-teal-500 focus:bg-white outline-none transition-all">
+                              <input type="text" id="campaign-search" placeholder="Buscar campaña o contacto..." class="w-full pl-6 md:pl-11 pr-2 py-1 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl text-base md:text-sm focus:ring-2 focus:ring-teal-500 focus:bg-white outline-none transition-all">
                          </div>
                          <div class="relative">
                              <button onclick="toggleCampaignFilter()" id="btn-campaign-filter" class="px-2 py-1 md:px-4 md:py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg md:rounded-xl text-[11px] md:text-sm font-medium flex items-center gap-1 transition-colors h-full">
@@ -440,22 +449,22 @@
 
             <!-- New Message View -->
             <div id="view-new" class="hidden max-w-3xl mx-auto w-full">
-                <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <div class="flex items-center gap-2 mb-4 md:mb-6">
+                <div class="bg-white p-3.5 md:p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex items-center gap-2 mb-3 md:mb-6">
                         <i class="ph ph-pencil-simple-line text-lg md:text-xl text-green-600"></i>
-                        <h2 class="text-base md:text-lg font-semibold">Nuevo Mensaje</h2>
+                        <h2 class="text-sm md:text-lg font-semibold">Nuevo Mensaje</h2>
                     </div>
                     
-                    <form id="schedule-form" class="space-y-3 md:space-y-4">
+                    <form id="schedule-form" class="space-y-2.5 md:space-y-4">
                         <div>
                             <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Nombre de la Campaña</label>
-                            <input type="text" id="msg-name" required placeholder="Ej: Recordatorio de Pago, Promoción..." class="w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" autocomplete="off" />
+                            <input type="text" id="msg-name" required placeholder="Ej: Recordatorio de Pago, Promoción..." class="w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" autocomplete="off" />
                         </div>
 
                         <div>
                             <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Destinatarios (Agrega uno o varios)</label>
                             <div class="flex gap-1.5 md:gap-2 relative">
-                                <input type="text" id="recipient" list="contacts-list" placeholder="Busca contacto o escribe número..." class="flex-1 w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" autocomplete="off" />
+                                <input type="text" id="recipient" list="contacts-list" placeholder="Busca contacto o escribe número..." class="flex-1 w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" autocomplete="off" />
                                 <datalist id="contacts-list"></datalist>
                                 <button type="button" id="btn-add-recipient" class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 md:px-4 md:py-2.5 rounded-lg font-medium text-xs md:text-sm transition-colors flex items-center gap-1 shrink-0 shadow-sm">
                                     <i class="ph ph-plus-bold"></i> Agregar
@@ -467,20 +476,20 @@
                             <div id="selected-recipients-container" class="flex flex-wrap gap-1.5 mt-2"></div>
                         </div>
                         
-                        <div class="grid grid-cols-2 gap-2.5 md:gap-4">
+                        <div class="grid grid-cols-2 gap-2 md:gap-4">
                             <div>
                                 <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Fecha de Inicio</label>
-                                <input type="date" id="msg-date" required class="w-full px-2.5 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
+                                <input type="date" id="msg-date" required class="w-full px-2 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
                             </div>
                             <div>
                                 <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Hora</label>
-                                <input type="time" id="msg-time" required class="w-full px-2.5 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
+                                <input type="time" id="msg-time" required class="w-full px-2 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
                             </div>
                         </div>
 
                         <div>
                             <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Mensaje</label>
-                            <textarea id="msg-text" required rows="3" placeholder="Escribe el mensaje aquí..." class="w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all resize-none"></textarea>
+                            <textarea id="msg-text" required rows="3" placeholder="Escribe el mensaje aquí..." class="w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all resize-none"></textarea>
                         </div>
 
                         <div class="border-t border-gray-100 pt-2.5 md:pt-3">
@@ -491,7 +500,7 @@
                             <div id="recurrence-options" class="hidden mt-2.5 space-y-2.5">
                                 <div>
                                     <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Plazo de repetición</label>
-                                    <select id="msg-frequency" class="w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
+                                    <select id="msg-frequency" class="w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all">
                                         <option value="daily">Diariamente</option>
                                         <option value="weekly">Semanalmente</option>
                                         <option value="monthly">Mensualmente</option>
@@ -500,7 +509,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Fecha de finalización</label>
-                                    <input type="date" id="msg-end-date" class="w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-xs md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
+                                    <input type="date" id="msg-end-date" class="w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
                                 </div>
                             </div>
                         </div>
@@ -528,7 +537,7 @@
                     <div id="pending-filters-bar" class="flex flex-col md:flex-row gap-1.5 md:gap-4 mb-2 md:mb-4 shrink-0 border-b border-gray-100 pb-1.5 md:pb-4 items-center flex-wrap">
                         <div class="w-full md:flex-1 md:min-w-[200px] relative">
                             <i class="ph ph-magnifying-glass absolute left-2.5 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-lg"></i>
-                            <input type="text" id="pending-search" placeholder="Buscar por nombre o contacto..." class="w-full pl-7 md:pl-9 pr-2.5 py-1 md:py-2 bg-gray-50 border border-gray-200 rounded-lg text-[11px] md:text-sm focus:ring-2 focus:ring-amber-500 outline-none transition-all" autocomplete="off">
+                            <input type="text" id="pending-search" placeholder="Buscar por nombre o contacto..." class="w-full pl-7 md:pl-9 pr-2.5 py-1 md:py-2 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-amber-500 outline-none transition-all" autocomplete="off">
                         </div>
                         <div class="w-full md:w-auto grid grid-cols-2 md:flex items-center gap-1.5 md:gap-2">
                             <select id="pending-filter-days" class="w-full px-2 py-1 md:px-3 md:py-2 bg-gray-50 border border-gray-200 rounded-lg text-[11px] md:text-sm focus:ring-2 focus:ring-amber-500 outline-none transition-all cursor-pointer">
@@ -566,7 +575,7 @@
                     <div id="history-filters-row" class="flex flex-col md:flex-row gap-1 md:gap-4 mb-1.5 md:mb-6 shrink-0 border-b border-gray-100 pb-1.5 md:pb-6 items-center flex-wrap">
                         <div class="w-full md:flex-1 md:min-w-[200px] relative">
                             <i class="ph ph-magnifying-glass absolute left-2 md:left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs md:text-lg"></i>
-                            <input type="text" id="history-search" placeholder="Buscar por nombre o contacto..." class="w-full pl-6 md:pl-9 pr-2 py-1 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[11px] md:text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all" autocomplete="off">
+                            <input type="text" id="history-search" placeholder="Buscar por nombre o contacto..." class="w-full pl-6 md:pl-9 pr-2 py-1 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all" autocomplete="off">
                         </div>
                         <div id="history-filters-grid" class="w-full md:w-auto grid grid-cols-3 md:flex items-center gap-1 md:gap-2">
                             <input type="date" id="history-filter-date-start" class="w-full min-w-0 px-1 py-0.5 md:px-3 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-[9.5px] md:text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all" title="Desde">
@@ -618,7 +627,7 @@
                         
                         <div class="relative flex-1 max-w-[190px] sm:max-w-xs">
                             <i class="ph ph-magnifying-glass absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-base"></i>
-                            <input type="text" id="contact-search" placeholder="Buscar..." class="w-full pl-6 md:pl-9 pr-2 py-1 md:py-2 bg-gray-50 border border-gray-200 rounded-lg text-[11px] md:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <input type="text" id="contact-search" placeholder="Buscar..." class="w-full pl-6 md:pl-9 pr-2 py-1 md:py-2 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
                         </div>
                     </div>
                     
@@ -642,27 +651,27 @@
 
         </div>
 
-        <!-- Barra de Navegación Inferior Estilo App Móvil -->
-        <nav id="mobile-bottom-nav" class="md:hidden bg-white border-t border-gray-200 px-2 py-1.5 flex items-center justify-around shrink-0 z-20 shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
-            <button onclick="switchView('pending')" id="mob-nav-pending" class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-green-600 bg-green-50 transition-colors min-w-[58px]">
+        <!-- Barra de Navegación Inferior Estilo App Móvil (Fija con Safe Area) -->
+        <nav id="mobile-bottom-nav" class="md:hidden bg-white border-t border-gray-200 px-2 pt-1.5 safe-bottom-nav flex items-center justify-around shrink-0 z-20 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
+            <button onclick="switchView('pending')" id="mob-nav-pending" class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-green-600 bg-green-50 transition-colors min-w-[56px]">
                 <i class="ph ph-calendar-blank text-xl"></i>
                 <span class="text-[10px] font-semibold mt-0.5">Pendientes</span>
             </button>
-            <button onclick="switchView('campaigns')" id="mob-nav-campaigns" class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors min-w-[58px]">
+            <button onclick="switchView('campaigns')" id="mob-nav-campaigns" class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors min-w-[56px]">
                 <i class="ph ph-presentation-chart text-xl"></i>
                 <span class="text-[10px] font-medium mt-0.5">Resumen</span>
             </button>
-            <button onclick="switchView('new')" id="mob-nav-new" class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors min-w-[58px]">
+            <button onclick="switchView('new')" id="mob-nav-new" class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors min-w-[56px]">
                 <div class="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center shadow-sm -mt-3 border-2 border-white">
                     <i class="ph-bold ph-plus text-base"></i>
                 </div>
                 <span class="text-[10px] font-semibold text-green-700 mt-0.5">Nuevo</span>
             </button>
-            <button onclick="switchView('history')" id="mob-nav-history" class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors min-w-[58px]">
+            <button onclick="switchView('history')" id="mob-nav-history" class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors min-w-[56px]">
                 <i class="ph ph-clock-counter-clockwise text-xl"></i>
                 <span class="text-[10px] font-medium mt-0.5">Historial</span>
             </button>
-            <button onclick="switchView('contacts')" id="mob-nav-contacts" class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors min-w-[58px]">
+            <button onclick="switchView('contacts')" id="mob-nav-contacts" class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 hover:bg-gray-50 transition-colors min-w-[56px]">
                 <i class="ph ph-users text-xl"></i>
                 <span class="text-[10px] font-medium mt-0.5">Contactos</span>
             </button>
@@ -862,7 +871,7 @@
         
         let isImportingContacts = false;
         let campaignMode = 'grouped';
-        let isSimulatedMobile = false;
+        let isSimulatedMobile = window.innerWidth < 768;
         
         let campaignFilterState = {
             startDate: '',
@@ -870,6 +879,17 @@
             repeatType: 'all',
             status: 'all'
         };
+
+        window.addEventListener('resize', () => {
+            const shell = document.getElementById('device-shell');
+            if (!shell.classList.contains('mobile-sim')) {
+                const nowMobile = window.innerWidth < 768;
+                if (nowMobile !== isSimulatedMobile) {
+                    isSimulatedMobile = nowMobile;
+                    renderUI();
+                }
+            }
+        });
 
         window.togglePasswordVisibility = () => {
             const pwdInput = document.getElementById('login-password');
@@ -994,21 +1014,21 @@
                 }
                 if (label) label.textContent = 'Vista Móvil (395px)';
             } else {
-                isSimulatedMobile = false;
+                isSimulatedMobile = window.innerWidth < 768;
                 body.classList.remove('bg-gray-800', 'items-center', 'justify-center', 'p-2', 'sm:p-6');
-                shell.className = 'w-full h-full flex overflow-hidden bg-[#f3f4f6] transition-all duration-300 relative';
+                shell.className = 'w-full h-[100dvh] flex overflow-hidden bg-[#f3f4f6] transition-all duration-300 relative';
                 
                 sidebar.classList.add('md:flex');
                 mobHeader.classList.add('md:hidden');
                 mobBottomNav.classList.add('md:hidden');
-                scrollArea.className = 'flex-1 overflow-y-auto p-4 lg:p-8 pb-24 md:pb-8 custom-scrollbar';
+                scrollArea.className = 'flex-1 min-h-0 flex flex-col overflow-y-auto p-2.5 md:p-6 lg:p-8 custom-scrollbar';
                 
                 if (pageHeader) pageHeader.classList.remove('hidden');
                 if (statsGrid) statsGrid.classList.add('lg:grid-cols-4');
                 if (tableHeader) tableHeader.classList.add('md:grid');
-                if (pendingBoard) pendingBoard.className = 'flex-1 bg-white p-3 md:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col min-h-[550px] md:h-[700px]';
-                if (pendingFiltersBar) pendingFiltersBar.className = 'flex flex-col md:flex-row gap-2.5 md:gap-4 mb-4 shrink-0 border-b border-gray-100 pb-3 md:pb-4 items-center flex-wrap';
-                if (pendingListEl) pendingListEl.className = 'flex-1 overflow-y-auto custom-scrollbar space-y-3 md:space-y-4 pr-1 md:pr-2 pb-2';
+                if (pendingBoard) pendingBoard.className = 'flex-1 bg-white p-2 md:p-6 rounded-xl md:rounded-2xl shadow-sm border border-gray-100 flex flex-col min-h-0 overflow-hidden';
+                if (pendingFiltersBar) pendingFiltersBar.className = 'flex flex-col md:flex-row gap-1.5 md:gap-4 mb-2 md:mb-4 shrink-0 border-b border-gray-100 pb-1.5 md:pb-4 items-center flex-wrap';
+                if (pendingListEl) pendingListEl.className = 'flex-1 overflow-y-auto custom-scrollbar space-y-2 md:space-y-4 pr-0.5 md:pr-2 pb-1';
                 
                 if (btnDesktop && btnMobile) {
                     btnDesktop.className = 'px-2.5 py-1 rounded-md bg-gray-700 text-white font-medium flex items-center gap-1 transition-colors';
@@ -1154,13 +1174,21 @@
             }
         });
 
-        // Firebase Initialization & Auth State Observer
+        // Firebase Initialization & Auth State Observer (con desbloqueo rápido)
         async function initialize() {
             if (!firebaseConfig) {
                 showToast("Falta configuración de base de datos.", "error");
                 loadingOverlay.classList.add('hidden');
                 return;
             }
+
+            // Evitar que se quede pegado en "Conectando..." si la red móvil tarda
+            const fallbackTimer = setTimeout(() => {
+                if (!currentUserId) {
+                    loadingOverlay.classList.add('hidden');
+                    loginScreen.classList.replace('hidden', 'flex');
+                }
+            }, 3500);
 
             try {
                 app = initializeApp(firebaseConfig);
@@ -1172,6 +1200,7 @@
                 }
 
                 onAuthStateChanged(auth, (user) => {
+                    clearTimeout(fallbackTimer);
                     if (user && !user.isAnonymous) {
                         currentUserId = user.uid;
                         loginScreen.classList.replace('flex', 'hidden');
@@ -1179,8 +1208,8 @@
                         if (userEmailDisplay && user.email) {
                             userEmailDisplay.textContent = user.email;
                         }
-                        setupRealtimeListener();
                         loadingOverlay.classList.add('hidden');
+                        setupRealtimeListener();
                     } else {
                         currentUserId = null;
                         loadingOverlay.classList.add('hidden');
@@ -1189,10 +1218,12 @@
                 });
                 
             } catch (error) {
+                clearTimeout(fallbackTimer);
                 console.error("Initialization Error:", error);
                 showToast("Error de conexión.", "error");
                 userStatusText.textContent = "Error";
                 loadingOverlay.classList.add('hidden');
+                loginScreen.classList.replace('hidden', 'flex');
             }
         }
 
@@ -1534,11 +1565,11 @@
         window.setCampaignMode = (mode) => {
             campaignMode = mode;
             if(mode === 'grouped') {
-                document.getElementById('tab-camp-agrupadas').className = "px-5 py-2 bg-teal-500 text-white rounded-full text-sm font-medium whitespace-nowrap shadow-sm shadow-teal-500/30";
-                document.getElementById('tab-camp-mensajes').className = "px-5 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-sm font-medium whitespace-nowrap transition-colors";
+                document.getElementById('tab-camp-agrupadas').className = "px-2.5 py-1 md:px-5 md:py-2 bg-teal-500 text-white rounded-full text-[10px] md:text-sm font-medium whitespace-nowrap shadow-sm shadow-teal-500/30";
+                document.getElementById('tab-camp-mensajes').className = "px-2.5 py-1 md:px-5 md:py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-[10px] md:text-sm font-medium whitespace-nowrap transition-colors";
             } else {
-                document.getElementById('tab-camp-mensajes').className = "px-5 py-2 bg-teal-500 text-white rounded-full text-sm font-medium whitespace-nowrap shadow-sm shadow-teal-500/30";
-                document.getElementById('tab-camp-agrupadas').className = "px-5 py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-sm font-medium whitespace-nowrap transition-colors";
+                document.getElementById('tab-camp-mensajes').className = "px-2.5 py-1 md:px-5 md:py-2 bg-teal-500 text-white rounded-full text-[10px] md:text-sm font-medium whitespace-nowrap shadow-sm shadow-teal-500/30";
+                document.getElementById('tab-camp-agrupadas').className = "px-2.5 py-1 md:px-5 md:py-2 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-full text-[10px] md:text-sm font-medium whitespace-nowrap transition-colors";
             }
             renderCampaigns();
         };
@@ -2702,8 +2733,7 @@
 
             const finalRecipients = [...selectedRecipients];
             if (pendingInputVal) {
-                const splitEntries = pendingInputVal.split(/[,;
-]+/).map(s => s.trim()).filter(Boolean);
+                const splitEntries = pendingInputVal.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean);
                 splitEntries.forEach(entry => {
                     if (!finalRecipients.includes(entry)) finalRecipients.push(entry);
                 });
