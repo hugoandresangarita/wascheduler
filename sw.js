@@ -1,45 +1,20 @@
-const CACHE_NAME = 'wascheduler-pwa-v4';
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.json'
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
-  );
+// Service Worker de limpieza automática para Safari iOS
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      )
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // Nunca interceptar CDNs externos ni Firebase
-  if (url.origin !== self.location.origin) {
-    return;
-  }
-
-  event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return networkResponse;
+    caches.keys()
+      .then((cacheNames) => Promise.all(cacheNames.map((name) => caches.delete(name))))
+      .then(() => self.registration.unregister())
+      .then(() => self.clients.matchAll())
+      .then((clients) => {
+        clients.forEach((client) => {
+          if (client.url && 'navigate' in client) {
+            client.navigate(client.url);
+          }
+        });
       })
-      .catch(() => caches.match(event.request))
   );
 });
