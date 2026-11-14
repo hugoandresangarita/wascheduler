@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wascheduler-pwa-v3';
+const CACHE_NAME = 'wascheduler-pwa-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -26,12 +26,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // NO interceptar peticiones externas (Tailwind, iconos, Google Fonts, Firebase)
+  // Nunca interceptar CDNs externos ni Firebase
   if (url.origin !== self.location.origin) {
     return;
   }
 
-  // Network-First para archivos propios: siempre busca lo más reciente y usa caché solo si no hay red
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
