@@ -188,47 +188,24 @@
             padding-left: 2.75rem !important;
         }
 
-        /* Fix 4: Área de texto del mensaje más amplia hacia abajo con botón en esquina inferior izquierda */
         .message-editor-box {
-            position: relative;
             border-radius: 0.5rem;
-            overflow: hidden;
-            border: 1px solid #e5e7eb;
-            background-color: #f9fafb;
         }
         .message-editor-box textarea {
             display: block;
             width: 100%;
-            min-height: 11rem;
-            padding: 0.75rem 1rem 2.35rem 1rem !important;
-            border: none !important;
-            background: transparent !important;
-            transition: min-height 0.2s ease, max-height 0.2s ease;
+            min-height: 8.5rem;
+            padding: 0.75rem 1rem !important;
+            background-color: #f9fafb !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.5rem !important;
+            resize: vertical;
         }
-        .message-editor-box.is-expanded textarea {
-            min-height: 22rem;
-        }
-        .message-expand-btn {
-            position: absolute;
-            bottom: 0.45rem;
-            left: 0.55rem;
-            z-index: 5;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            padding: 0.22rem 0.55rem;
-            font-size: 0.72rem;
-            font-weight: 600;
-            color: #0f766e;
-            background-color: #f0fdfa;
-            border: 1px solid #99f6e4;
-            border-radius: 0.45rem;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        .message-expand-btn:hover {
-            background-color: #ccfbf1;
-            color: #115e59;
+        .message-editor-box textarea:focus {
+            background-color: #f0fdf4 !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2) !important;
+            outline: none !important;
         }
     </style>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -593,8 +570,11 @@
 
         window.getSavedTemplates = function() {
             try {
-                var saved = JSON.parse(localStorage.getItem('wascheduler_templates') || 'null');
-                if (Array.isArray(saved) && saved.length > 0) return saved;
+                var raw = localStorage.getItem('wascheduler_templates');
+                if (raw !== null) {
+                    var saved = JSON.parse(raw);
+                    if (Array.isArray(saved)) return saved;
+                }
             } catch (e) {}
             return [
                 { title: 'Recordatorio de Pago', text: 'Hola {nombre}, te recordamos amablemente que tienes un pago pendiente programado para hoy. ¡Gracias!' },
@@ -619,6 +599,10 @@
             var container = document.getElementById('templates-list-container');
             if (!container) return;
             var list = window.getSavedTemplates();
+            if (list.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-gray-400 text-xs"><i class="ph ph-bookmarks-simple text-3xl mb-1.5 opacity-50 block"></i>No tienes plantillas guardadas.<br>Escribe un mensaje arriba y pulsa <strong>Guardar actual</strong>.</div>';
+                return;
+            }
             container.innerHTML = list.map(function(tpl, idx) {
                 return '<div class="p-3 bg-gray-50 border border-gray-200 rounded-xl flex flex-col gap-1.5">' +
                     '<div class="flex items-center justify-between gap-2">' +
@@ -637,7 +621,16 @@
             var list = window.getSavedTemplates();
             if (list[idx]) {
                 var ta = document.getElementById(window._templateTargetTextareaId || 'msg-text');
-                if (ta) ta.value = list[idx].text;
+                if (ta) {
+                    var currentVal = ta.value;
+                    if (currentVal && currentVal.trim().length > 0) {
+                        var separator = currentVal.endsWith('\n') ? '' : '\n';
+                        ta.value = currentVal + separator + list[idx].text;
+                    } else {
+                        ta.value = list[idx].text;
+                    }
+                    ta.focus();
+                }
                 window.triggerNativeHaptic('light');
                 window.closeTemplatesModal();
             }
@@ -655,29 +648,18 @@
             var list = window.getSavedTemplates();
             list.unshift({ title: title, text: text });
             localStorage.setItem('wascheduler_templates', JSON.stringify(list));
+            if (typeof window.syncTemplatesToCloud === 'function') window.syncTemplatesToCloud(list);
             if (titleInput) titleInput.value = '';
             window.renderTemplatesList();
-            if (typeof showToast === 'function') showToast('Plantilla guardada');
+            if (typeof showToast === 'function') showToast('Plantilla guardada y sincronizada');
         };
 
         window.deleteTemplate = function(idx) {
             var list = window.getSavedTemplates();
             list.splice(idx, 1);
             localStorage.setItem('wascheduler_templates', JSON.stringify(list));
+            if (typeof window.syncTemplatesToCloud === 'function') window.syncTemplatesToCloud(list);
             window.renderTemplatesList();
-        };
-
-        // Fix 4: Alternar tamaño (Agrandar / Empequeñecer) de las cajas de texto del mensaje
-        window.toggleMessageBoxSize = function(boxId, btnId) {
-            var box = document.getElementById(boxId);
-            var btn = document.getElementById(btnId);
-            if (!box) return;
-            var expanded = box.classList.toggle('is-expanded');
-            if (btn) {
-                btn.innerHTML = expanded
-                    ? '<i class="ph-bold ph-arrows-in-simple"></i> <span>Empequeñecer</span>'
-                    : '<i class="ph-bold ph-arrows-out-simple"></i> <span>Agrandar</span>';
-            }
         };
 
         window.triggerTestNotification = function() {
@@ -1060,10 +1042,7 @@
                                 </button>
                             </div>
                             <div id="new-msg-box" class="message-editor-box">
-                                <textarea id="msg-text" required placeholder="Escribe el mensaje aquí... (usa {nombre} para personalizar)"></textarea>
-                                <button type="button" id="btn-expand-new-msg" onclick="toggleMessageBoxSize('new-msg-box', 'btn-expand-new-msg')" class="message-expand-btn" title="Agrandar o empequeñecer cuadro de mensaje">
-                                    <i class="ph-bold ph-arrows-out-simple"></i> <span>Agrandar</span>
-                                </button>
+                                <textarea id="msg-text" required placeholder="Escribe aquí el mensaje..."></textarea>
                             </div>
                         </div>
 
@@ -1308,9 +1287,9 @@
     <!-- Modals -->
 
     <!-- Edit Modal (Mensaje individual o Campaña Completa) -->
-    <div id="edit-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all max-h-[92vh] flex flex-col">
-            <div class="p-5 md:p-6 border-b border-gray-100 flex-shrink-0 flex items-center justify-between">
+    <div id="edit-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden items-center justify-center p-2 sm:p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col" style="max-height: 90vh; max-height: 90dvh;">
+            <div class="px-5 py-3.5 md:px-6 md:py-4 border-b border-gray-100 shrink-0 flex items-center justify-between bg-white">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
                         <i class="ph ph-pencil-simple text-xl"></i>
@@ -1322,7 +1301,7 @@
                 </div>
                 <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 transition-colors"><i class="ph ph-x text-xl"></i></button>
             </div>
-            <div class="p-5 md:p-6 overflow-y-auto flex-1 space-y-4 custom-scrollbar">
+            <div class="p-4 md:p-6 overflow-y-auto flex-1 min-h-0 space-y-3.5 custom-scrollbar">
                 <input type="hidden" id="edit-msg-id">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Campaña</label>
@@ -1433,13 +1412,10 @@
                     </div>
                     <div id="edit-msg-box" class="message-editor-box">
                         <textarea id="edit-msg-text" placeholder="Escribe el mensaje aquí..."></textarea>
-                        <button type="button" id="btn-expand-edit-msg" onclick="toggleMessageBoxSize('edit-msg-box', 'btn-expand-edit-msg')" class="message-expand-btn" title="Agrandar o empequeñecer cuadro de mensaje">
-                            <i class="ph-bold ph-arrows-out-simple"></i> <span>Agrandar</span>
-                        </button>
                     </div>
                 </div>
             </div>
-            <div class="p-5 md:p-6 border-t border-gray-100 flex-shrink-0 flex gap-3">
+            <div class="px-5 py-3.5 md:px-6 md:py-4 border-t border-gray-100 shrink-0 flex gap-3 bg-white">
                 <button onclick="closeEditModal()" class="flex-1 py-2.5 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors">Cancelar</button>
                 <button id="edit-save-btn" class="flex-1 py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors shadow-sm shadow-purple-600/20 flex items-center justify-center gap-2">
                     <i class="ph ph-floppy-disk"></i> Guardar Cambios
@@ -1588,7 +1564,7 @@
                 <button onclick="closeTemplatesModal()" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-lg"></i></button>
             </div>
             <div class="p-4 bg-teal-50/50 border-b border-gray-100 shrink-0">
-                <p class="text-[11px] text-gray-600 mb-2">Guarda el texto que escribiste como nueva plantilla (usa <code class="bg-white px-1 rounded border">{nombre}</code> para personalizar):</p>
+                <p class="text-[11px] text-gray-600 mb-2">Guarda el texto que escribiste como nueva plantilla:</p>
                 <div class="flex gap-1.5">
                     <input type="text" id="new-template-title" placeholder="Nombre de la plantilla..." class="flex-1 px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:border-teal-500">
                     <button type="button" onclick="saveCurrentAsTemplate()" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg shrink-0">Guardar actual</button>
@@ -1619,10 +1595,28 @@
     </div>
 
     <!-- Firebase and Logic -->
+<style>
+        /* Verde suave y agradable al tocar o enfocar tarjetas, mensajes y botones */
+        .message-editor-box:focus-within {
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2) !important;
+            background-color: #f0fdf4 !important;
+        }
+        #pending-list > div:active,
+        #history-list > div:active,
+        #sidebar-message-list > div:active {
+            background-color: #f0fdf4 !important;
+            border-color: #86efac !important;
+        }
+        button:active,
+        a:active {
+            outline: none;
+        }
+</style>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURACIÓN DE FIREBASE ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'wa-scheduler-manual-app';
@@ -1674,6 +1668,7 @@
         let currentUserId = localStorage.getItem(CACHE_KEYS.UID) || null;
         let unsubMessages = null;
         let unsubContacts = null;
+        let unsubTemplates = null;
         let allMessages = [];
         let allContacts = [];
         let selectedRecipients = [];
@@ -1853,6 +1848,7 @@
                 if (loadingInterval) clearInterval(loadingInterval);
                 if (unsubMessages) { unsubMessages(); unsubMessages = null; }
                 if (unsubContacts) { unsubContacts(); unsubContacts = null; }
+                if (unsubTemplates) { unsubTemplates(); unsubTemplates = null; }
                 clearLocalCache();
                 await signOut(auth);
                 allMessages = [];
@@ -2272,9 +2268,36 @@
 
             if (unsubMessages) unsubMessages();
             if (unsubContacts) unsubContacts();
+            if (unsubTemplates) unsubTemplates();
 
             const messagesRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'messages');
             const contactsRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'contacts');
+            const templatesDocRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'settings', 'templates');
+
+            window.syncTemplatesToCloud = async (list) => {
+                if (!currentUserId || !db) return;
+                try {
+                    await setDoc(templatesDocRef, { items: list, updatedAt: serverTimestamp() }, { merge: true });
+                } catch (e) {
+                    console.error("Error sincronizando plantillas en la nube:", e);
+                }
+            };
+
+            unsubTemplates = onSnapshot(templatesDocRef, (docSnap) => {
+                if (docSnap.exists() && Array.isArray(docSnap.data().items)) {
+                    localStorage.setItem('wascheduler_templates', JSON.stringify(docSnap.data().items));
+                    const tplModal = document.getElementById('templates-modal');
+                    if (tplModal && !tplModal.classList.contains('hidden')) {
+                        window.renderTemplatesList();
+                    }
+                } else if (!docSnap.exists()) {
+                    // Solo si nunca se ha creado el documento en la nube, inicializar con las locales actuales
+                    const currentLocal = window.getSavedTemplates ? window.getSavedTemplates() : [];
+                    window.syncTemplatesToCloud(currentLocal);
+                }
+            }, (error) => {
+                console.error("Templates listen failed:", error);
+            });
 
             unsubMessages = onSnapshot(messagesRef, (snapshot) => {
                 allMessages = [];
@@ -3783,9 +3806,9 @@
             document.querySelectorAll('.edit-weekly-day-btn').forEach(btn => {
                 const d = parseInt(btn.getAttribute('data-eday'), 10);
                 if (editWeeklyDays.has(d)) {
-                    btn.style.backgroundColor = "#4ade80";
-                    btn.style.color = "#111827";
-                    btn.style.borderColor = "#16a34a";
+                    btn.style.backgroundColor = "#86efac";
+                    btn.style.color = "#064e3b";
+                    btn.style.borderColor = "#22c55e";
                     btn.style.fontWeight = "700";
                 } else {
                     btn.style.backgroundColor = "#ffffff";
@@ -4384,9 +4407,9 @@
                 const d = parseInt(btn.getAttribute('data-day'), 10);
                 if (selectedWeeklyDays.has(d)) {
                     btn.className = "weekly-day-btn py-2 rounded-xl text-xs font-bold bg-green-400 text-gray-900 border-2 border-green-600 shadow-sm transition-all";
-                    btn.style.backgroundColor = "#4ade80";
-                    btn.style.color = "#111827";
-                    btn.style.borderColor = "#16a34a";
+                    btn.style.backgroundColor = "#86efac";
+                    btn.style.color = "#064e3b";
+                    btn.style.borderColor = "#22c55e";
                 } else {
                     btn.className = "weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50 transition-all";
                     btn.style.backgroundColor = "#ffffff";
@@ -4406,7 +4429,7 @@
                     ? "monthly-day-btn py-2 rounded-xl text-xs font-bold bg-green-400 text-gray-900 border-2 border-green-600 shadow-sm transition-all"
                     : "monthly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50 transition-all";
                 const inlineStyle = isSelected
-                    ? 'style="background-color:#4ade80;color:#111827;border-color:#16a34a;"'
+                    ? 'style="background-color:#86efac;color:#064e3b;border-color:#22c55e;"'
                     : 'style="background-color:#ffffff;color:#374151;border-color:#e5e7eb;"';
                 btns += `<button type="button" data-mday="${day}" onclick="toggleMonthlyDay(${day})" class="${cls}" ${inlineStyle}>${day}</button>`;
             }
