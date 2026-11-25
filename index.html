@@ -8,7 +8,6 @@
     <script>
         // Purga automática de Service Workers y cachés antiguas en Safari iOS
         (function() {
-            var needsReload = false;
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                     if (registrations && registrations.length > 0) {
@@ -183,6 +182,54 @@
         .-mt-3 { margin-top: -0.75rem; }
         .border-l-4 { border-left-width: 4px; }
         .border-l-green-500 { border-left-color: #10b981; }
+
+        /* Fix 1: Separación clara entre la lupa y el texto de búsqueda en Campañas */
+        #campaign-search {
+            padding-left: 2.75rem !important;
+        }
+
+        /* Fix 4: Área de texto del mensaje más amplia hacia abajo con botón en esquina inferior izquierda */
+        .message-editor-box {
+            position: relative;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+        }
+        .message-editor-box textarea {
+            display: block;
+            width: 100%;
+            min-height: 11rem;
+            padding: 0.75rem 1rem 2.35rem 1rem !important;
+            border: none !important;
+            background: transparent !important;
+            transition: min-height 0.2s ease, max-height 0.2s ease;
+        }
+        .message-editor-box.is-expanded textarea {
+            min-height: 22rem;
+        }
+        .message-expand-btn {
+            position: absolute;
+            bottom: 0.45rem;
+            left: 0.55rem;
+            z-index: 5;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.22rem 0.55rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #0f766e;
+            background-color: #f0fdfa;
+            border: 1px solid #99f6e4;
+            border-radius: 0.45rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .message-expand-btn:hover {
+            background-color: #ccfbf1;
+            color: #115e59;
+        }
     </style>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
@@ -197,20 +244,10 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #c1c1c1; 
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8; 
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
 
         .safe-top-header {
             padding-top: env(safe-area-inset-top);
@@ -228,12 +265,8 @@
             from { opacity: 1; }
             to { opacity: 0; }
         }
-        .toast-enter {
-            animation: slideInUp 0.3s ease-out forwards;
-        }
-        .toast-exit {
-            animation: fadeOut 0.3s ease-out forwards;
-        }
+        .toast-enter { animation: slideInUp 0.3s ease-out forwards; }
+        .toast-exit { animation: fadeOut 0.3s ease-out forwards; }
 
         .mobile-sim #stats-grid {
             grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
@@ -253,13 +286,8 @@
             margin-right: 0 !important;
             margin-bottom: 0.15rem !important;
         }
-        .mobile-sim .stat-icon-box i {
-            font-size: 0.7rem !important;
-        }
-        .mobile-sim .stat-val {
-            font-size: 0.85rem !important;
-            line-height: 1 !important;
-        }
+        .mobile-sim .stat-icon-box i { font-size: 0.7rem !important; }
+        .mobile-sim .stat-val { font-size: 0.85rem !important; line-height: 1 !important; }
         .mobile-sim #stats-grid p:last-child {
             font-size: 7.5px !important;
             letter-spacing: -0.02em !important;
@@ -293,7 +321,7 @@
         .mobile-sim #contact-search {
             padding-top: 0.25rem !important;
             padding-bottom: 0.25rem !important;
-            padding-left: 1.5rem !important;
+            padding-left: 2rem !important;
             font-size: 10.5px !important;
             border-radius: 0.5rem !important;
         }
@@ -340,9 +368,7 @@
             height: 1.35rem !important;
             font-size: 9px !important;
         }
-        .mobile-sim #view-new > div {
-            padding: 0.6rem !important;
-        }
+        .mobile-sim #view-new > div { padding: 0.6rem !important; }
         .mobile-sim #view-new input,
         .mobile-sim #view-new select,
         .mobile-sim #view-new textarea {
@@ -350,6 +376,319 @@
             font-size: 11px !important;
         }
     </style>
+    <script>
+        // Configuración de Apps de WhatsApp habilitadas (Normal, Business o Ambos)
+        window.getWaSettings = function() {
+            var normal = localStorage.getItem('wascheduler_en_normal');
+            var business = localStorage.getItem('wascheduler_en_business');
+            if (normal === null && business === null) {
+                return { normal: true, business: false };
+            }
+            return {
+                normal: normal === 'true',
+                business: business === 'true'
+            };
+        };
+
+        window.getWaMode = function() {
+            var s = window.getWaSettings();
+            if (s.normal && s.business) return 'both';
+            if (s.business) return 'whatsapp-smb';
+            return 'whatsapp';
+        };
+
+        window.getReminderIntervalHours = function() {
+            var val = localStorage.getItem('wascheduler_reminder_hours');
+            if (val === null) return 2;
+            return parseInt(val, 10);
+        };
+
+        window.setReminderIntervalHours = function(hours) {
+            var h = parseInt(hours, 10);
+            localStorage.setItem('wascheduler_reminder_hours', String(h));
+            window.syncWaSettingsUI();
+            if (window.syncNativeNotifications && typeof allMessages !== 'undefined') {
+                window.syncNativeNotifications(allMessages);
+            }
+            if (typeof renderUI === 'function') renderUI();
+            if (typeof showToast === 'function') {
+                showToast(h > 0 ? 'Recordatorio configurado cada ' + h + 'h' : 'Recordatorios repetitivos desactivados', 'info');
+            }
+        };
+
+        window.toggleWaAppSetting = function(type) {
+            var s = window.getWaSettings();
+            if (type === 'normal') {
+                if (s.normal && !s.business) {
+                    if (typeof showToast === 'function') showToast('Debe quedar al menos una app activa', 'info');
+                    window.syncWaSettingsUI();
+                    return;
+                }
+                s.normal = !s.normal;
+            } else if (type === 'business') {
+                if (s.business && !s.normal) {
+                    if (typeof showToast === 'function') showToast('Debe quedar al menos una app activa', 'info');
+                    window.syncWaSettingsUI();
+                    return;
+                }
+                s.business = !s.business;
+            }
+            localStorage.setItem('wascheduler_en_normal', s.normal ? 'true' : 'false');
+            localStorage.setItem('wascheduler_en_business', s.business ? 'true' : 'false');
+            window.syncWaSettingsUI();
+
+            if (window.syncNativeNotifications && typeof allMessages !== 'undefined') {
+                window.syncNativeNotifications(allMessages);
+            }
+            if (typeof renderUI === 'function') renderUI();
+        };
+
+        window.syncWaSettingsUI = function() {
+            var s = window.getWaSettings();
+            var remHours = String(window.getReminderIntervalHours());
+            ['desk', 'modal'].forEach(function(prefix) {
+                var chkN = document.getElementById(prefix + '-chk-wa-normal');
+                var chkB = document.getElementById(prefix + '-chk-wa-business');
+                var selR = document.getElementById(prefix + '-reminder-interval');
+                if (chkN) chkN.checked = s.normal;
+                if (chkB) chkB.checked = s.business;
+                if (selR) selR.value = remHours;
+            });
+            var badgeMob = document.getElementById('mob-wa-mode-label');
+            if (badgeMob) {
+                var modeTxt = (s.normal && s.business) ? 'Ambos' : (s.business ? 'Business' : 'Normal');
+                badgeMob.textContent = remHours !== '0' ? (modeTxt + ' · ' + remHours + 'h') : modeTxt;
+            }
+        };
+
+        window.openWaConfigModal = function() {
+            window.syncWaSettingsUI();
+            var m = document.getElementById('wa-config-modal');
+            if (m) m.classList.replace('hidden', 'flex');
+        };
+
+        window.closeWaConfigModal = function() {
+            var m = document.getElementById('wa-config-modal');
+            if (m) m.classList.replace('flex', 'hidden');
+        };
+
+        window._pendingWaChoice = null;
+        window.handleSendClick = function(e, phone, encodedText) {
+            if (e) e.preventDefault();
+            var text = decodeURIComponent(encodedText || '');
+            var cleanPhone = (phone || '').replace(/[^\d]/g, '');
+            var mode = window.getWaMode();
+
+            if (mode === 'both') {
+                window._pendingWaChoice = { phone: cleanPhone, text: text };
+                var m = document.getElementById('wa-choose-app-modal');
+                if (m) m.classList.replace('hidden', 'flex');
+                return false;
+            }
+            window.launchWhatsAppDirect(mode, cleanPhone, text);
+            return false;
+        };
+
+        window.confirmWaChoice = function(scheme) {
+            var m = document.getElementById('wa-choose-app-modal');
+            if (m) m.classList.replace('flex', 'hidden');
+            if (window._pendingWaChoice) {
+                window.launchWhatsAppDirect(scheme, window._pendingWaChoice.phone, window._pendingWaChoice.text);
+                window._pendingWaChoice = null;
+            }
+        };
+
+        window.launchWhatsAppDirect = function(scheme, cleanPhone, text) {
+            var isIOSWebView = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.openExternal);
+            if (isIOSWebView) {
+                var targetUrl = '';
+                if (scheme === 'whatsapp-smb') {
+                    targetUrl = cleanPhone
+                        ? 'whatsapp-smb://send?phone=' + cleanPhone + '&text=' + encodeURIComponent(text)
+                        : 'whatsapp-smb://send?text=' + encodeURIComponent(text);
+                } else {
+                    targetUrl = cleanPhone
+                        ? 'https://api.whatsapp.com/send?phone=' + cleanPhone + '&text=' + encodeURIComponent(text)
+                        : 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
+                }
+                window.webkit.messageHandlers.openExternal.postMessage(targetUrl);
+            } else {
+                var webUrl = cleanPhone
+                    ? 'https://wa.me/' + cleanPhone + '?text=' + encodeURIComponent(text)
+                    : 'https://web.whatsapp.com/send?text=' + encodeURIComponent(text);
+                window.open(webUrl, '_blank');
+            }
+        };
+
+        document.addEventListener('click', function(e) {
+            var anchor = e.target.closest('a');
+            if (anchor && anchor.href && !anchor.hasAttribute('data-wa-send')) {
+                var url = anchor.href;
+                if (url.indexOf('wa.me') !== -1 || url.indexOf('whatsapp.com') !== -1 || anchor.target === '_blank') {
+                    e.preventDefault();
+                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.openExternal) {
+                        window.webkit.messageHandlers.openExternal.postMessage(url);
+                    } else {
+                        window.location.href = url;
+                    }
+                }
+            }
+        }, true);
+
+        window.syncNativeNotifications = function(messages) {
+            if (!window.webkit || !window.webkit.messageHandlers || !window.webkit.messageHandlers.syncAllNotifications) return;
+            var mode = window.getWaMode();
+            var reminderHours = window.getReminderIntervalHours();
+
+            var pendingPayload = [];
+            messages.forEach(function(msg) {
+                if (msg.status === 'pending') {
+                    var phoneMatch = (msg.recipient || '').match(/[\+\d\s-]{8,}/);
+                    var cleanPhone = phoneMatch ? phoneMatch[0].replace(/[^\d]/g, '') : '';
+                    var waQuery = cleanPhone
+                        ? 'phone=' + cleanPhone + '&text=' + encodeURIComponent(msg.text || '')
+                        : 'text=' + encodeURIComponent(msg.text || '');
+
+                    pendingPayload.push({
+                        id: msg.id,
+                        name: msg.name || 'WaScheduler',
+                        recipient: msg.recipient || '',
+                        text: msg.text || '',
+                        date: msg.date,
+                        time: msg.time,
+                        waQuery: waQuery
+                    });
+                }
+            });
+
+            window.webkit.messageHandlers.syncAllNotifications.postMessage({
+                waMode: mode,
+                reminderHours: reminderHours,
+                messages: pendingPayload
+            });
+        };
+
+        window.triggerNativeHaptic = function(style) {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.triggerHaptic) {
+                window.webkit.messageHandlers.triggerHaptic.postMessage(style || 'light');
+            }
+        };
+
+        window.updateNativeBadge = function(count) {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.updateAppBadge) {
+                window.webkit.messageHandlers.updateAppBadge.postMessage(count);
+            }
+        };
+
+        window.personalizeMessageText = function(text, recipientStr) {
+            if (!text || text.indexOf('{nombre}') === -1) return text;
+            var rawName = (recipientStr || '').split('|')[0].trim();
+            var firstName = rawName ? rawName.split(/\s+/)[0] : '';
+            if (!firstName || /^[\+\d-]+$/.test(firstName)) firstName = 'Hola';
+            return text.replace(/\{nombre\}/gi, firstName);
+        };
+
+        // Gestión de Plantillas Rápidas (soporta destino 'new' o 'edit')
+        window._templateTargetTextareaId = 'msg-text';
+
+        window.getSavedTemplates = function() {
+            try {
+                var saved = JSON.parse(localStorage.getItem('wascheduler_templates') || 'null');
+                if (Array.isArray(saved) && saved.length > 0) return saved;
+            } catch (e) {}
+            return [
+                { title: 'Recordatorio de Pago', text: 'Hola {nombre}, te recordamos amablemente que tienes un pago pendiente programado para hoy. ¡Gracias!' },
+                { title: 'Confirmación de Cita', text: 'Hola {nombre}, te escribimos para confirmar nuestra cita programada. Por favor confírmanos tu asistencia.' },
+                { title: 'Seguimiento Comercial', text: 'Hola {nombre}, ¿cómo estás? Quería hacer seguimiento a nuestra conversación anterior y saber si tienes alguna duda.' }
+            ];
+        };
+
+        window.openTemplatesModal = function(targetTextareaId) {
+            window._templateTargetTextareaId = targetTextareaId || 'msg-text';
+            window.renderTemplatesList();
+            var m = document.getElementById('templates-modal');
+            if (m) m.classList.replace('hidden', 'flex');
+        };
+
+        window.closeTemplatesModal = function() {
+            var m = document.getElementById('templates-modal');
+            if (m) m.classList.replace('flex', 'hidden');
+        };
+
+        window.renderTemplatesList = function() {
+            var container = document.getElementById('templates-list-container');
+            if (!container) return;
+            var list = window.getSavedTemplates();
+            container.innerHTML = list.map(function(tpl, idx) {
+                return '<div class="p-3 bg-gray-50 border border-gray-200 rounded-xl flex flex-col gap-1.5">' +
+                    '<div class="flex items-center justify-between gap-2">' +
+                        '<span class="text-xs font-bold text-gray-800">' + tpl.title.replace(/</g, '&lt;') + '</span>' +
+                        '<div class="flex items-center gap-1">' +
+                            '<button type="button" onclick="applyTemplate(' + idx + ')" class="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-semibold rounded-lg">Usar</button>' +
+                            '<button type="button" onclick="deleteTemplate(' + idx + ')" class="p-1 text-gray-400 hover:text-red-600 rounded"><i class="ph ph-trash text-sm"></i></button>' +
+                        '</div>' +
+                    '</div>' +
+                    '<p class="text-[11px] text-gray-600 whitespace-pre-wrap">' + tpl.text.replace(/</g, '&lt;') + '</p>' +
+                '</div>';
+            }).join('');
+        };
+
+        window.applyTemplate = function(idx) {
+            var list = window.getSavedTemplates();
+            if (list[idx]) {
+                var ta = document.getElementById(window._templateTargetTextareaId || 'msg-text');
+                if (ta) ta.value = list[idx].text;
+                window.triggerNativeHaptic('light');
+                window.closeTemplatesModal();
+            }
+        };
+
+        window.saveCurrentAsTemplate = function() {
+            var textEl = document.getElementById(window._templateTargetTextareaId || 'msg-text') || document.getElementById('msg-text');
+            var text = textEl ? textEl.value.trim() : '';
+            if (!text) {
+                if (typeof showToast === 'function') showToast('Escribe un mensaje primero para guardarlo como plantilla', 'info');
+                return;
+            }
+            var titleInput = document.getElementById('new-template-title');
+            var title = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : ('Plantilla ' + (window.getSavedTemplates().length + 1));
+            var list = window.getSavedTemplates();
+            list.unshift({ title: title, text: text });
+            localStorage.setItem('wascheduler_templates', JSON.stringify(list));
+            if (titleInput) titleInput.value = '';
+            window.renderTemplatesList();
+            if (typeof showToast === 'function') showToast('Plantilla guardada');
+        };
+
+        window.deleteTemplate = function(idx) {
+            var list = window.getSavedTemplates();
+            list.splice(idx, 1);
+            localStorage.setItem('wascheduler_templates', JSON.stringify(list));
+            window.renderTemplatesList();
+        };
+
+        // Fix 4: Alternar tamaño (Agrandar / Empequeñecer) de las cajas de texto del mensaje
+        window.toggleMessageBoxSize = function(boxId, btnId) {
+            var box = document.getElementById(boxId);
+            var btn = document.getElementById(btnId);
+            if (!box) return;
+            var expanded = box.classList.toggle('is-expanded');
+            if (btn) {
+                btn.innerHTML = expanded
+                    ? '<i class="ph-bold ph-arrows-in-simple"></i> <span>Empequeñecer</span>'
+                    : '<i class="ph-bold ph-arrows-out-simple"></i> <span>Agrandar</span>';
+            }
+        };
+
+        window.triggerTestNotification = function() {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.testNotification) {
+                window.webkit.messageHandlers.testNotification.postMessage(window.getWaMode());
+                alert('Prueba iniciada:\n• En 5s llegará la 1ª notificación (abre WhatsApp).\n• En 15s llegará el 2º recordatorio (abre WaScheduler para evitar duplicados).\nPuedes cerrar la app para probar.');
+            } else {
+                alert('Esta prueba funciona únicamente dentro de la app instalada en iOS.');
+            }
+        };
+    </script>
 </head>
 <body class="text-gray-800 h-[100dvh] flex overflow-hidden transition-colors duration-300" id="app-body">
 
@@ -442,7 +781,32 @@
                 </div>
             </div>
         </div>
-        <div class="p-4 border-t border-gray-100 flex flex-col gap-3 shrink-0">
+        <div class="p-4 border-t border-gray-100 flex flex-col gap-2.5 shrink-0">
+            <div class="hidden lg:flex flex-col gap-1.5 bg-gray-50 p-2.5 rounded-xl border border-gray-200/80">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Apps de Envío Activas</span>
+                <label class="flex items-center justify-between cursor-pointer py-0.5">
+                    <span class="text-xs font-medium text-gray-700 flex items-center gap-1.5"><i class="ph-fill ph-whatsapp-logo text-[#25D366] text-base"></i> WhatsApp Normal</span>
+                    <input type="checkbox" id="desk-chk-wa-normal" onchange="toggleWaAppSetting('normal')" class="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500">
+                </label>
+                <label class="flex items-center justify-between cursor-pointer py-0.5">
+                    <span class="text-xs font-medium text-gray-700 flex items-center gap-1.5"><i class="ph-fill ph-briefcase text-teal-700 text-base"></i> WA Business</span>
+                    <input type="checkbox" id="desk-chk-wa-business" onchange="toggleWaAppSetting('business')" class="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500">
+                </label>
+                <div class="border-t border-gray-200 my-1"></div>
+                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Recordar sin enviar cada</label>
+                <select id="desk-reminder-interval" onchange="setReminderIntervalHours(this.value)" class="w-full px-2 py-1.5 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-semibold outline-none focus:border-teal-500">
+                    <option value="2">Cada 2 horas</option>
+                    <option value="4">Cada 4 horas</option>
+                    <option value="6">Cada 6 horas</option>
+                    <option value="8">Cada 8 horas</option>
+                    <option value="12">Cada 12 horas</option>
+                    <option value="0">Desactivado</option>
+                </select>
+            </div>
+            <button onclick="triggerTestNotification()" class="w-full py-2 px-3 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-lg text-xs font-semibold flex items-center justify-center lg:justify-start gap-2 transition-colors" title="Probar notificación en 5 segundos">
+                <i class="ph-bold ph-bell-ringing text-base shrink-0"></i>
+                <span class="hidden lg:inline">Probar Notificación (5s)</span>
+            </button>
             <div class="flex items-center justify-between">
                 <div class="flex items-center justify-center lg:justify-start min-w-0">
                     <div class="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold shrink-0">
@@ -488,7 +852,14 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span> Caché
                 </span>
             </div>
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1">
+                <button onclick="openWaConfigModal()" class="px-2 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-[10px] font-bold flex items-center gap-1" title="Configurar WhatsApp Normal / Business">
+                    <i class="ph-bold ph-gear text-xs"></i>
+                    <span id="mob-wa-mode-label">Normal</span>
+                </button>
+                <button onclick="triggerTestNotification()" class="p-1.5 text-teal-600 hover:bg-teal-50 bg-teal-50/70 border border-teal-200 rounded-lg" title="Probar notificación en 5s">
+                    <i class="ph-bold ph-bell-ringing text-sm"></i>
+                </button>
                 <button onclick="setViewportMode('desktop')" id="btn-exit-mobile" class="hidden px-2 py-1 bg-gray-800 text-white text-[11px] font-semibold rounded-lg items-center gap-1" title="Volver a vista escritorio">
                     <i class="ph ph-desktop text-sm"></i> PC
                 </button>
@@ -555,8 +926,8 @@
                      <!-- Search & Filter -->
                      <div id="campaigns-search-row" class="flex gap-1 md:gap-4 mb-1.5 md:mb-4 shrink-0 relative">
                          <div class="flex-1 relative">
-                              <i class="ph ph-magnifying-glass absolute left-2 md:left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs md:text-lg"></i>
-                              <input type="text" id="campaign-search" placeholder="Buscar campaña o contacto..." class="w-full pl-6 md:pl-11 pr-2 py-1 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl text-base md:text-sm focus:ring-2 focus:ring-teal-500 focus:bg-white outline-none transition-all">
+                              <i class="ph ph-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm md:text-lg pointer-events-none"></i>
+                              <input type="text" id="campaign-search" placeholder="Buscar campaña o contacto..." class="w-full pl-10 md:pl-11 pr-3 py-1.5 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl text-base md:text-sm focus:ring-2 focus:ring-teal-500 focus:bg-white outline-none transition-all">
                          </div>
                          <div class="relative">
                              <button onclick="toggleCampaignFilter()" id="btn-campaign-filter" class="px-2 py-1 md:px-4 md:py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-lg md:rounded-xl text-[11px] md:text-sm font-medium flex items-center gap-1 transition-colors h-full">
@@ -650,11 +1021,15 @@
                             <input type="text" id="msg-name" required placeholder="Ej: Recordatorio de Pago, Promoción..." class="w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" autocomplete="off" />
                         </div>
 
-                        <div>
+                        <div id="recipient-picker-wrapper" class="relative">
                             <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Destinatarios (Agrega uno o varios)</label>
                             <div class="flex gap-1.5 md:gap-2 relative">
-                                <input type="text" id="recipient" list="contacts-list" placeholder="Busca contacto o escribe número..." class="flex-1 w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" autocomplete="off" />
-                                <datalist id="contacts-list"></datalist>
+                                <div class="flex-1 relative">
+                                    <input type="text" id="recipient" placeholder="Busca contacto o escribe número..." class="w-full pl-3 pr-8 py-2 md:pl-4 md:pr-9 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" autocomplete="off" />
+                                    <button type="button" id="btn-toggle-contacts-dropdown" onclick="toggleContactsDropdown()" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-600 p-1" title="Ver lista de contactos">
+                                        <i class="ph-bold ph-caret-down text-sm"></i>
+                                    </button>
+                                </div>
                                 <button type="button" id="btn-add-recipient" class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 md:px-4 md:py-2.5 rounded-lg font-medium text-xs md:text-sm transition-colors flex items-center gap-1 shrink-0 shadow-sm">
                                     <i class="ph ph-plus-bold"></i> Agregar
                                 </button>
@@ -662,6 +1037,7 @@
                                     <i class="ph ph-copy text-base md:text-lg"></i>
                                 </button>
                             </div>
+                            <div id="custom-contacts-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-52 overflow-y-auto custom-scrollbar divide-y divide-gray-100"></div>
                             <div id="selected-recipients-container" class="flex flex-wrap gap-1.5 mt-2"></div>
                         </div>
                         
@@ -672,25 +1048,35 @@
                             </div>
                             <div>
                                 <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Hora</label>
-                                <input type="time" id="msg-time" required class="w-full px-2 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
+                                <input type="time" id="msg-time" required value="08:00" class="w-full px-2 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all" />
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-xs md:text-sm font-medium text-gray-700 mb-1">Mensaje</label>
-                            <textarea id="msg-text" required rows="3" placeholder="Escribe el mensaje aquí..." class="w-full px-3 py-2 md:px-4 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition-all resize-none"></textarea>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs md:text-sm font-medium text-gray-700">Mensaje</label>
+                                <button type="button" onclick="openTemplatesModal('msg-text')" class="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors">
+                                    <i class="ph-bold ph-bookmarks-simple"></i> Plantillas
+                                </button>
+                            </div>
+                            <div id="new-msg-box" class="message-editor-box">
+                                <textarea id="msg-text" required placeholder="Escribe el mensaje aquí... (usa {nombre} para personalizar)"></textarea>
+                                <button type="button" id="btn-expand-new-msg" onclick="toggleMessageBoxSize('new-msg-box', 'btn-expand-new-msg')" class="message-expand-btn" title="Agrandar o empequeñecer cuadro de mensaje">
+                                    <i class="ph-bold ph-arrows-out-simple"></i> <span>Agrandar</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="border-t border-gray-100 pt-2.5 md:pt-3">
                             <div class="flex items-center gap-2">
-                                <input type="checkbox" id="msg-recurring" class="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500" onchange="document.getElementById('recurrence-options').classList.toggle('hidden', !this.checked); if(this.checked && window.handleFrequencyChange) window.handleFrequencyChange(); if(window.syncRecurrenceEndRequirement) window.syncRecurrenceEndRequirement();">
+                                <input type="checkbox" id="msg-recurring" class="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500" onchange="document.getElementById('recurrence-options').classList.toggle('hidden', !this.checked); if(window.syncRecurrenceEndRequirement) window.syncRecurrenceEndRequirement();">
                                 <label for="msg-recurring" class="text-xs md:text-sm font-medium text-gray-700">Repetir mensaje automáticamente</label>
                             </div>
                             <div id="recurrence-options" class="hidden mt-2.5 space-y-3">
                                 <div class="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
                                     <div class="px-3.5 py-2.5 bg-white border-b border-gray-100 flex items-center justify-between gap-2">
                                         <span class="text-xs md:text-sm font-semibold text-gray-700">Repetir</span>
-                                        <select id="msg-frequency" onchange="handleFrequencyChange()" class="px-3 py-1.5 bg-green-50 border border-green-500 text-gray-800 font-semibold rounded-xl text-xs md:text-sm outline-none focus:ring-2 focus:ring-green-500 cursor-pointer">
+                                        <select id="msg-frequency" onchange="handleFrequencyChange()" class="px-3 py-1.5 bg-green-50 border border-green-500 text-gray-800 font-semibold rounded-xl text-xs md:text-sm outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer">
                                             <option value="daily">Diariamente</option>
                                             <option value="weekly">Semanalmente</option>
                                             <option value="monthly">Mensualmente</option>
@@ -705,13 +1091,13 @@
                                             <button type="button" onclick="toggleAllWeeklyDays()" class="text-[11px] font-semibold text-green-600 hover:underline">Todos / Limpiar</button>
                                         </div>
                                         <div id="weekly-days-grid" class="grid grid-cols-7 gap-1.5">
-                                            <button type="button" data-day="1" onclick="toggleWeeklyDay(1)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm transition-all">Lun</button>
-                                            <button type="button" data-day="2" onclick="toggleWeeklyDay(2)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm transition-all">Mar</button>
-                                            <button type="button" data-day="3" onclick="toggleWeeklyDay(3)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm transition-all">Mié</button>
-                                            <button type="button" data-day="4" onclick="toggleWeeklyDay(4)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm transition-all">Jue</button>
-                                            <button type="button" data-day="5" onclick="toggleWeeklyDay(5)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm transition-all">Vie</button>
-                                            <button type="button" data-day="6" onclick="toggleWeeklyDay(6)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm transition-all">Sáb</button>
-                                            <button type="button" data-day="0" onclick="toggleWeeklyDay(0)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm transition-all">Dom</button>
+                                            <button type="button" data-day="1" onclick="toggleWeeklyDay(1)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200/80 shadow-sm transition-all">Lun</button>
+                                            <button type="button" data-day="2" onclick="toggleWeeklyDay(2)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200/80 shadow-sm transition-all">Mar</button>
+                                            <button type="button" data-day="3" onclick="toggleWeeklyDay(3)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200/80 shadow-sm transition-all">Mié</button>
+                                            <button type="button" data-day="4" onclick="toggleWeeklyDay(4)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200/80 shadow-sm transition-all">Jue</button>
+                                            <button type="button" data-day="5" onclick="toggleWeeklyDay(5)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200/80 shadow-sm transition-all">Vie</button>
+                                            <button type="button" data-day="6" onclick="toggleWeeklyDay(6)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200/80 shadow-sm transition-all">Sáb</button>
+                                            <button type="button" data-day="0" onclick="toggleWeeklyDay(0)" class="weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200/80 shadow-sm transition-all">Dom</button>
                                         </div>
                                     </div>
 
@@ -721,8 +1107,8 @@
                                             <span class="text-xs md:text-sm font-bold text-gray-800">Selecciona tus días</span>
                                             <button type="button" onclick="clearMonthlyDays()" class="text-[11px] font-semibold text-green-600 hover:underline">Limpiar</button>
                                         </div>
-                                        <div id="monthly-days-grid" class="grid grid-cols-7 gap-1.5"></div>
-                                        <p class="text-[11px] text-gray-500 leading-snug bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 flex items-start gap-1.5">
+                                        <div id="monthly-days-grid" class="grid grid-cols-7 sm:grid-cols-9 gap-1.5"></div>
+                                        <p class="text-[11px] text-gray-500 leading-snug bg-amber-50/70 border border-amber-200/70 rounded-lg px-2.5 py-1.5 flex items-start gap-1.5">
                                             <i class="ph-fill ph-info text-amber-600 text-sm shrink-0 mt-0.5"></i>
                                             <span><strong>Nota:</strong> Si seleccionas un día superior al total de días del mes (ej. día 31 en meses de 30, 29 o 28 días), el sistema ajustará automáticamente el envío al último día disponible de ese mes para que no se pierda.</span>
                                         </p>
@@ -732,12 +1118,12 @@
                                     <div id="yearly-years-panel" class="hidden p-3.5 flex items-center justify-between gap-3">
                                         <div>
                                             <span class="block text-xs md:text-sm font-bold text-gray-800">Duración (años)</span>
-                                            <span id="yearly-years-hint" class="text-[11px] text-gray-500">1 envío anual (1 año)</span>
+                                            <span id="yearly-years-hint" class="text-[11px] text-gray-500">1 envío anual (solo el año inicial)</span>
                                         </div>
                                         <div class="flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
                                             <button type="button" id="btn-yearly-minus" onclick="changeYearlyCount(-1)" class="w-9 h-9 flex items-center justify-center text-gray-700 hover:bg-gray-100 active:bg-gray-200 disabled:opacity-35 disabled:pointer-events-none font-bold text-base transition-colors" aria-label="Reducir años">−</button>
                                             <span id="yearly-count-display" class="min-w-[2.5rem] text-center text-sm font-bold text-gray-900 select-none">1</span>
-                                            <button type="button" id="btn-yearly-plus" onclick="changeYearlyCount(1)" class="w-9 h-9 flex items-center justify-center text-green-600 hover:bg-green-50 active:bg-green-100 font-bold text-base transition-colors" aria-label="Aumentar años">+</button>
+                                            <button type="button" id="btn-yearly-plus" onclick="changeYearlyCount(1)" class="w-9 h-9 flex items-center justify-center text-green-600 hover:bg-teal-50 active:bg-teal-100 font-bold text-base transition-colors" aria-label="Aumentar años">+</button>
                                         </div>
                                     </div>
                                 </div>
@@ -808,7 +1194,7 @@
                     <!-- Filters -->
                     <div id="history-filters-row" class="flex flex-col md:flex-row gap-1 md:gap-4 mb-1.5 md:mb-6 shrink-0 border-b border-gray-100 pb-1.5 md:pb-6 items-center flex-wrap">
                         <div class="w-full md:flex-1 md:min-w-[200px] relative">
-                            <i class="ph ph-magnifying-glass absolute left-2 md:left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs md:text-lg"></i>
+                            <i class="ph ph-magnifying-glass absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs md:text-lg"></i>
                             <input type="text" id="history-search" placeholder="Buscar por nombre o contacto..." class="w-full pl-6 md:pl-9 pr-2 py-1 md:py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-base md:text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all" autocomplete="off">
                         </div>
                         <div id="history-filters-grid" class="w-full md:w-auto grid grid-cols-3 md:flex items-center gap-1 md:gap-2">
@@ -841,6 +1227,10 @@
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             <span id="upload-status" class="text-[10px] font-medium text-teal-600"></span>
+                            <button type="button" onclick="exportFullBackup()" class="bg-gray-50 text-gray-700 hover:bg-gray-100 px-2 py-1 md:px-3 md:py-2 rounded-lg text-[10px] md:text-sm font-medium transition-colors border border-gray-200 shadow-sm flex items-center gap-1" title="Descargar copia de seguridad JSON">
+                                <i class="ph ph-download-simple text-xs md:text-lg"></i>
+                                <span>Respaldo</span>
+                            </button>
                             <label class="relative cursor-pointer bg-blue-50 text-blue-700 hover:bg-blue-100 px-2 py-1 md:px-3.5 md:py-2 rounded-lg text-[10px] md:text-sm font-medium transition-colors border border-blue-200 shadow-sm flex items-center">
                                 <i class="ph ph-upload-simple mr-1 text-xs md:text-lg"></i> 
                                 <span>Subir VCF</span>
@@ -917,31 +1307,55 @@
 
     <!-- Modals -->
 
-    <!-- Edit Modal -->
+    <!-- Edit Modal (Mensaje individual o Campaña Completa) -->
     <div id="edit-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all max-h-[90vh] flex flex-col">
-            <div class="p-6 border-b border-gray-100 flex-shrink-0 flex items-center justify-between">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all max-h-[92vh] flex flex-col">
+            <div class="p-5 md:p-6 border-b border-gray-100 flex-shrink-0 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
                         <i class="ph ph-pencil-simple text-xl"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-900">Editar Mensaje</h3>
+                    <div>
+                        <h3 id="edit-modal-title" class="text-lg font-bold text-gray-900">Editar Mensaje</h3>
+                        <p id="edit-modal-subtitle" class="hidden text-xs text-purple-700 font-medium">Edición completa de campaña: destinatarios, repetición y fecha de fin</p>
+                    </div>
                 </div>
                 <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 transition-colors"><i class="ph ph-x text-xl"></i></button>
             </div>
-            <div class="p-6 overflow-y-auto flex-1 space-y-4 custom-scrollbar">
+            <div class="p-5 md:p-6 overflow-y-auto flex-1 space-y-4 custom-scrollbar">
                 <input type="hidden" id="edit-msg-id">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Campaña</label>
                     <input type="text" id="edit-msg-name" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
                 </div>
-                <div>
+
+                <!-- Destinatario simple (para mensaje individual) -->
+                <div id="edit-single-recipient-wrap">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Destinatario</label>
                     <input type="text" id="edit-msg-recipient" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
                 </div>
+
+                <!-- Destinatarios múltiples (para campaña completa) -->
+                <div id="edit-campaign-recipients-wrap" class="hidden relative">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Destinatarios de la Campaña (Agrega uno o varios)</label>
+                    <div class="flex gap-2 relative">
+                        <div class="flex-1 relative">
+                            <input type="text" id="edit-recipient-input" placeholder="Busca contacto o escribe número..." class="w-full pl-3.5 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none" autocomplete="off">
+                            <button type="button" onclick="toggleEditContactsDropdown()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600 p-1" title="Ver lista de contactos">
+                                <i class="ph-bold ph-caret-down text-sm"></i>
+                            </button>
+                        </div>
+                        <button type="button" onclick="addEditRecipientToList()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-medium text-sm transition-colors flex items-center gap-1 shrink-0 shadow-sm">
+                            <i class="ph ph-plus-bold"></i> Agregar
+                        </button>
+                    </div>
+                    <div id="edit-custom-contacts-dropdown" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto custom-scrollbar divide-y divide-gray-100"></div>
+                    <div id="edit-selected-recipients-container" class="flex flex-wrap gap-1.5 mt-2"></div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+                        <label id="edit-date-label" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
                         <input type="date" id="edit-msg-date" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
                     </div>
                     <div>
@@ -949,12 +1363,83 @@
                         <input type="time" id="edit-msg-time" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
                     </div>
                 </div>
+
+                <!-- Opciones completas de repetición y fecha de fin (para campaña completa) -->
+                <div id="edit-recurrence-section" class="hidden border-t border-gray-100 pt-3 space-y-3">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="edit-msg-recurring" class="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500" onchange="document.getElementById('edit-recurrence-options').classList.toggle('hidden', !this.checked); if(window.handleEditFrequencyChange) window.handleEditFrequencyChange();">
+                        <label for="edit-msg-recurring" class="text-sm font-medium text-gray-700">Repetir mensaje automáticamente</label>
+                    </div>
+                    <div id="edit-recurrence-options" class="hidden space-y-3 bg-gray-50 border border-gray-200 rounded-xl p-3.5">
+                        <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-gray-200/70">
+                            <span class="text-sm font-semibold text-gray-700">Repetir</span>
+                            <select id="edit-msg-frequency" onchange="handleEditFrequencyChange()" class="px-3 py-1.5 bg-purple-50 border border-purple-400 text-gray-800 font-semibold rounded-xl text-sm outline-none cursor-pointer">
+                                <option value="daily">Diariamente</option>
+                                <option value="weekly">Semanalmente</option>
+                                <option value="monthly">Mensualmente</option>
+                                <option value="yearly">Anualmente</option>
+                            </select>
+                        </div>
+
+                        <div id="edit-weekly-days-panel" class="hidden space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-gray-800">Selecciona tus días</span>
+                                <button type="button" onclick="toggleAllEditWeeklyDays()" class="text-[11px] font-semibold text-purple-600 hover:underline">Todos / Limpiar</button>
+                            </div>
+                            <div id="edit-weekly-days-grid" class="grid grid-cols-7 gap-1.5">
+                                <button type="button" data-eday="1" onclick="toggleEditWeeklyDay(1)" class="edit-weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm">Lun</button>
+                                <button type="button" data-eday="2" onclick="toggleEditWeeklyDay(2)" class="edit-weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm">Mar</button>
+                                <button type="button" data-eday="3" onclick="toggleEditWeeklyDay(3)" class="edit-weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm">Mié</button>
+                                <button type="button" data-eday="4" onclick="toggleEditWeeklyDay(4)" class="edit-weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm">Jue</button>
+                                <button type="button" data-eday="5" onclick="toggleEditWeeklyDay(5)" class="edit-weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm">Vie</button>
+                                <button type="button" data-eday="6" onclick="toggleEditWeeklyDay(6)" class="edit-weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm">Sáb</button>
+                                <button type="button" data-eday="0" onclick="toggleEditWeeklyDay(0)" class="edit-weekly-day-btn py-2 rounded-xl text-xs font-semibold bg-white text-gray-700 border border-gray-200 shadow-sm">Dom</button>
+                            </div>
+                        </div>
+
+                        <div id="edit-monthly-days-panel" class="hidden space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-gray-800">Selecciona tus días</span>
+                                <button type="button" onclick="clearEditMonthlyDays()" class="text-[11px] font-semibold text-purple-600 hover:underline">Limpiar</button>
+                            </div>
+                            <div id="edit-monthly-days-grid" class="grid grid-cols-7 sm:grid-cols-9 gap-1.5"></div>
+                        </div>
+
+                        <div id="edit-yearly-years-panel" class="hidden flex items-center justify-between gap-3">
+                            <div>
+                                <span class="block text-xs font-bold text-gray-800">Duración (años)</span>
+                                <span id="edit-yearly-years-hint" class="text-[11px] text-gray-500">1 envío anual</span>
+                            </div>
+                            <div class="flex items-center bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                                <button type="button" id="btn-edit-yearly-minus" onclick="changeEditYearlyCount(-1)" class="w-9 h-9 flex items-center justify-center text-gray-700 hover:bg-gray-100 font-bold text-base">−</button>
+                                <span id="edit-yearly-count-display" class="min-w-[2.5rem] text-center text-sm font-bold text-gray-900 select-none">1</span>
+                                <button type="button" id="btn-edit-yearly-plus" onclick="changeEditYearlyCount(1)" class="w-9 h-9 flex items-center justify-center text-purple-600 hover:bg-purple-50 font-bold text-base">+</button>
+                            </div>
+                        </div>
+
+                        <div id="edit-end-date-container">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Fecha de finalización</label>
+                            <input type="date" id="edit-msg-end-date" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none">
+                        </div>
+                    </div>
+                </div>
+
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Mensaje</label>
-                    <textarea id="edit-msg-text" rows="5" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none"></textarea>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-sm font-medium text-gray-700">Mensaje</label>
+                        <button type="button" onclick="openTemplatesModal('edit-msg-text')" class="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-md text-[11px] font-semibold flex items-center gap-1 transition-colors">
+                            <i class="ph-bold ph-bookmarks-simple"></i> Plantillas
+                        </button>
+                    </div>
+                    <div id="edit-msg-box" class="message-editor-box">
+                        <textarea id="edit-msg-text" placeholder="Escribe el mensaje aquí..."></textarea>
+                        <button type="button" id="btn-expand-edit-msg" onclick="toggleMessageBoxSize('edit-msg-box', 'btn-expand-edit-msg')" class="message-expand-btn" title="Agrandar o empequeñecer cuadro de mensaje">
+                            <i class="ph-bold ph-arrows-out-simple"></i> <span>Agrandar</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="p-6 border-t border-gray-100 flex-shrink-0 flex gap-3">
+            <div class="p-5 md:p-6 border-t border-gray-100 flex-shrink-0 flex gap-3">
                 <button onclick="closeEditModal()" class="flex-1 py-2.5 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium rounded-lg transition-colors">Cancelar</button>
                 <button id="edit-save-btn" class="flex-1 py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors shadow-sm shadow-purple-600/20 flex items-center justify-center gap-2">
                     <i class="ph ph-floppy-disk"></i> Guardar Cambios
@@ -1006,7 +1491,7 @@
             </div>
             
             <div class="p-4 bg-white flex flex-col gap-3 shrink-0">
-                <button onclick="closeCampaignPreviewModal()" class="w-full py-3 px-4 bg-[#2aa1af] hover:bg-[#238c99] text-white font-medium rounded-xl transition-colors">Entendido</button>
+                <button onclick="closeCampaignPreviewModal()" class="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors">Entendido</button>
                 <button id="btn-edit-future" class="w-full py-3 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium rounded-xl transition-colors flex items-center justify-center gap-2">
                     <i class="ph ph-pencil-simple text-lg"></i> Editar próximos mensajes
                 </button>
@@ -1026,6 +1511,92 @@
             <div class="p-5 overflow-y-auto flex-1 custom-scrollbar space-y-3" id="recipients-list-container"></div>
             <div class="p-4 border-t border-gray-100 shrink-0">
                 <button onclick="document.getElementById('recipients-modal').classList.replace('flex','hidden')" class="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Configurar Apps de WhatsApp y Recordatorios -->
+    <div id="wa-config-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-xs overflow-hidden p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <i class="ph-fill ph-gear text-teal-600 text-xl"></i> Configuración
+                </h3>
+                <button onclick="closeWaConfigModal()" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-lg"></i></button>
+            </div>
+            <p class="text-[11px] text-gray-500 mb-3">Activa una app para abrirla directo sin preguntar, o ambas para elegir al enviar.</p>
+            <div class="space-y-2 mb-4">
+                <label class="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
+                    <span class="text-xs font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="ph-fill ph-whatsapp-logo text-[#25D366] text-lg"></i> WhatsApp Normal
+                    </span>
+                    <input type="checkbox" id="modal-chk-wa-normal" onchange="toggleWaAppSetting('normal')" class="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500">
+                </label>
+                <label class="flex items-center justify-between p-2.5 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
+                    <span class="text-xs font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="ph-fill ph-briefcase text-teal-700 text-lg"></i> WhatsApp Business
+                    </span>
+                    <input type="checkbox" id="modal-chk-wa-business" onchange="toggleWaAppSetting('business')" class="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500">
+                </label>
+            </div>
+
+            <div class="border-t border-gray-100 pt-3 mb-4">
+                <label class="block text-xs font-bold text-gray-800 mb-1 flex items-center gap-1.5">
+                    <i class="ph-fill ph-bell-ringing text-amber-500 text-base"></i> Recordatorio si no se envía
+                </label>
+                <p class="text-[11px] text-gray-500 mb-2">Si borras la 1ª notificación o no marcas el mensaje como Listo, te avisará cada:</p>
+                <select id="modal-reminder-interval" onchange="setReminderIntervalHours(this.value)" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 text-gray-800 rounded-xl text-xs font-semibold outline-none focus:border-teal-500">
+                    <option value="2">Cada 2 horas (Recomendado)</option>
+                    <option value="4">Cada 4 horas</option>
+                    <option value="6">Cada 6 horas</option>
+                    <option value="8">Cada 8 horas</option>
+                    <option value="12">Cada 12 horas</option>
+                    <option value="0">Desactivado (Solo 1 aviso)</option>
+                </select>
+            </div>
+
+            <button onclick="closeWaConfigModal()" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-colors">Listo</button>
+        </div>
+    </div>
+
+    <!-- Modal Elegir App (cuando ambas están activas) -->
+    <div id="wa-choose-app-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-xs overflow-hidden p-5">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-base font-bold text-gray-900">¿Con cuál app enviar?</h3>
+                <button onclick="document.getElementById('wa-choose-app-modal').classList.replace('flex','hidden')" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-lg"></i></button>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">Tienes ambas aplicaciones habilitadas.</p>
+            <div class="space-y-2.5">
+                <button onclick="confirmWaChoice('whatsapp')" class="w-full py-3 px-4 bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold rounded-xl flex items-center justify-center gap-2 text-sm shadow-sm transition-colors">
+                    <i class="ph-fill ph-whatsapp-logo text-xl"></i> WhatsApp Normal
+                </button>
+                <button onclick="confirmWaChoice('whatsapp-smb')" class="w-full py-3 px-4 bg-teal-700 hover:bg-teal-800 text-white font-semibold rounded-xl flex items-center justify-center gap-2 text-sm shadow-sm transition-colors">
+                    <i class="ph-fill ph-briefcase text-xl"></i> WhatsApp Business
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Plantillas Rápidas -->
+    <div id="templates-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <i class="ph-fill ph-bookmarks-simple text-teal-600 text-xl"></i> Plantillas Rápidas
+                </h3>
+                <button onclick="closeTemplatesModal()" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-lg"></i></button>
+            </div>
+            <div class="p-4 bg-teal-50/50 border-b border-gray-100 shrink-0">
+                <p class="text-[11px] text-gray-600 mb-2">Guarda el texto que escribiste como nueva plantilla (usa <code class="bg-white px-1 rounded border">{nombre}</code> para personalizar):</p>
+                <div class="flex gap-1.5">
+                    <input type="text" id="new-template-title" placeholder="Nombre de la plantilla..." class="flex-1 px-2.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:border-teal-500">
+                    <button type="button" onclick="saveCurrentAsTemplate()" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg shrink-0">Guardar actual</button>
+                </div>
+            </div>
+            <div id="templates-list-container" class="p-4 overflow-y-auto flex-1 custom-scrollbar space-y-2.5"></div>
+            <div class="p-3 border-t border-gray-100 shrink-0">
+                <button type="button" onclick="closeTemplatesModal()" class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl">Cerrar</button>
             </div>
         </div>
     </div>
@@ -1053,8 +1624,6 @@
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Service Worker desactivado para garantizar compatibilidad total con Safari iOS
-
         // --- CONFIGURACIÓN DE FIREBASE ---
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'wa-scheduler-manual-app';
         let firebaseConfig = {
@@ -1074,7 +1643,6 @@
             console.error("Usando configuración local de Firebase.");
         }
 
-        // Claves de Caché Local Instantáneo
         const CACHE_KEYS = {
             UID: 'wascheduler_uid',
             EMAIL: 'wascheduler_email',
@@ -1082,7 +1650,6 @@
             CONTACTS: 'wascheduler_contacts_cache'
         };
 
-        // DOM Elements
         const form = document.getElementById('schedule-form');
         const pendingList = document.getElementById('pending-list');
         const historyList = document.getElementById('history-list');
@@ -1118,7 +1685,6 @@
         let campaignMode = 'grouped';
         let isSimulatedMobile = window.innerWidth < 768;
 
-        // Variables de control de progreso de carga (1% - 100%)
         let loadingInterval = null;
         let currentProgress = 1;
         let initialMessagesLoaded = false;
@@ -1131,7 +1697,6 @@
             status: 'all'
         };
 
-        // --- CACHÉ LOCAL INSTANTÁNEO ---
         function loadFromLocalCache() {
             try {
                 const cachedUid = localStorage.getItem(CACHE_KEYS.UID);
@@ -1504,6 +2069,8 @@
             if (view === 'new') {
                 pTitle.textContent = "Nuevo Mensaje";
                 pDesc.textContent = "Programa un nuevo envío de WhatsApp.";
+                const timeEl = document.getElementById('msg-time');
+                if (timeEl && !timeEl.value) timeEl.value = '08:00';
             } else if (view === 'pending') {
                 pTitle.textContent = "Mensajes Pendientes";
                 pDesc.textContent = "Gestiona tus envíos manuales programados.";
@@ -1522,7 +2089,6 @@
             }
         };
 
-        // Manejar envío del formulario de Login
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value.trim();
@@ -1558,7 +2124,6 @@
             }
         });
 
-        // Firebase Initialization & Auth State Observer
         async function initialize() {
             const loadedCached = loadFromLocalCache();
 
@@ -1603,6 +2168,10 @@
                         }
                         startDatabaseSyncProgress();
                         setupRealtimeListener();
+                        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.webAppReady) {
+                            window.webkit.messageHandlers.webAppReady.postMessage('ready');
+                        }
+                        if (window.flushNativeDoneQueue) window.flushNativeDoneQueue();
                     } else {
                         currentUserId = null;
                         clearLocalCache();
@@ -1629,7 +2198,75 @@
             }
         }
 
-        // Firestore Listeners
+        window.flushNativeDoneQueue = async () => {
+            if (!currentUserId || !db) return;
+
+            const doneIds = Array.isArray(window._nativeDoneQueue) ? [...window._nativeDoneQueue] : [];
+            if (doneIds.length > 0) {
+                window._nativeDoneQueue = [];
+                localStorage.setItem('wascheduler_native_done_queue', '[]');
+                for (const id of doneIds) {
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', id);
+                        await updateDoc(docRef, { status: 'sent', actionAt: serverTimestamp() });
+                    } catch (err) {
+                        console.error("Error syncing native markAsSent:", err);
+                    }
+                }
+                showToast(doneIds.length > 1 ? `${doneIds.length} mensajes marcados como enviados` : "Marcado como enviado desde notificación");
+            }
+
+            const postponeIds = Array.isArray(window._nativePostponeQueue) ? [...window._nativePostponeQueue] : [];
+            if (postponeIds.length > 0) {
+                if (!allMessages || allMessages.length === 0) {
+                    window._nativePostponeQueue = postponeIds;
+                    return;
+                }
+                window._nativePostponeQueue = [];
+                localStorage.setItem('wascheduler_native_postpone_queue', '[]');
+                let postponedCount = 0;
+                for (const id of postponeIds) {
+                    try {
+                        const msg = allMessages.find(m => m.id === id);
+                        if (!msg || msg.status !== 'pending') continue;
+                        const currentDateObj = new Date(msg.date + 'T12:00:00');
+                        currentDateObj.setDate(currentDateObj.getDate() + 1);
+                        const newDateStr = currentDateObj.toISOString().split('T')[0];
+                        const currentPostponedDays = msg.totalPostponedDays || 0;
+
+                        const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', id);
+                        await updateDoc(docRef, {
+                            date: newDateStr,
+                            isPostponed: true,
+                            totalPostponedDays: currentPostponedDays + 1,
+                            actionAt: serverTimestamp()
+                        });
+                        postponedCount++;
+                    } catch (err) {
+                        console.error("Error syncing native postpone:", err);
+                    }
+                }
+                if (postponedCount > 0) {
+                    showToast(postponedCount > 1 ? `${postponedCount} mensajes pospuestos 1 día` : "Mensaje pospuesto 1 día desde notificación", "info");
+                }
+            }
+
+            const skipIds = Array.isArray(window._nativeSkipQueue) ? [...window._nativeSkipQueue] : [];
+            if (skipIds.length > 0) {
+                window._nativeSkipQueue = [];
+                localStorage.setItem('wascheduler_native_skip_queue', '[]');
+                for (const id of skipIds) {
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', id);
+                        await updateDoc(docRef, { status: 'skipped', actionAt: serverTimestamp() });
+                    } catch (err) {
+                        console.error("Error syncing native skip:", err);
+                    }
+                }
+                showToast(skipIds.length > 1 ? `${skipIds.length} mensajes omitidos` : "Mensaje omitido desde notificación", "info");
+            }
+        };
+
         function setupRealtimeListener() {
             if (!currentUserId) return;
 
@@ -1645,8 +2282,10 @@
                     allMessages.push({ id: doc.id, ...doc.data() });
                 });
                 renderUI();
+                if (window.syncNativeNotifications) window.syncNativeNotifications(allMessages);
                 saveToLocalCache();
 
+                if (window.flushNativeDoneQueue) window.flushNativeDoneQueue();
                 if (!initialMessagesLoaded) {
                     initialMessagesLoaded = true;
                     if (!initialContactsLoaded && !hasRenderedFromCache) {
@@ -1700,6 +2339,12 @@
             if (filterBtn && popover && !popover.classList.contains('hidden') && !filterBtn.contains(e.target) && !popover.contains(e.target)) {
                 popover.classList.add('hidden');
             }
+            if (!e.target.closest('#recipient-picker-wrapper')) {
+                window.closeContactsDropdown();
+            }
+            if (!e.target.closest('#edit-campaign-recipients-wrap')) {
+                window.closeEditContactsDropdown();
+            }
         });
 
         window.filterFromContact = (encodedName, category) => {
@@ -1734,7 +2379,6 @@
             if (isImportingContacts) return;
             
             const tableBody = document.getElementById('contacts-table-body');
-            const datalist = document.getElementById('contacts-list');
             const searchQuery = contactSearchInput ? contactSearchInput.value.toLowerCase() : '';
             
             const filteredContacts = allContacts.filter(c => 
@@ -1749,7 +2393,6 @@
                     <i class="ph ph-users text-4xl mb-2 opacity-50"></i><br>
                     ${allContacts.length > 0 ? 'No se encontraron resultados' : 'No hay contactos guardados'}
                 </td></tr>`;
-                datalist.innerHTML = '';
                 return;
             }
 
@@ -1820,7 +2463,9 @@
                 `;
             }).join('');
 
-            datalist.innerHTML = allContacts.map(c => `<option value="${c.name.replace(/</g, "&lt;")}  |  ${c.phone.replace(/</g, "&lt;")}">`).join('');
+            if (typeof window.renderCustomContactsDropdown === 'function') {
+                window.renderCustomContactsDropdown(document.getElementById('recipient')?.value || '');
+            }
         }
         
         window.toggleContactPopover = (id) => {
@@ -1880,6 +2525,8 @@
                 return (a.recipient || '').localeCompare(b.recipient || '');
             });
             pendingCount.textContent = pending.length;
+            const badgeTotal = allMessages.filter(m => m.status === 'pending' && m.date <= todayStr).length;
+            if (window.updateNativeBadge) window.updateNativeBadge(badgeTotal);
 
             const emptyPendingHTML = `
                 <div class="h-full flex flex-col items-center justify-center text-gray-400 opacity-50">
@@ -2246,7 +2893,7 @@
                                     <span class="text-[10px] font-semibold flex items-center gap-1 px-1.5 py-0.5 rounded ${camp.statusClass}">
                                         ${camp.status}
                                     </span>
-                                    <button onclick="toggleMobileMsgDetail('camp-${camp.id}')" class="text-[10px] font-medium text-[#2aa1af] hover:text-[#21838f] flex items-center gap-1 transition-colors">
+                                    <button onclick="toggleMobileMsgDetail('camp-${camp.id}')" class="text-[10px] font-medium text-green-600 hover:text-[#21838f] flex items-center gap-1 transition-colors">
                                         <span id="mob-detail-text-camp-${camp.id}">Más detalles</span>
                                         <i id="mob-detail-icon-camp-${camp.id}" class="ph ph-caret-down text-[10px]"></i>
                                     </button>
@@ -2326,7 +2973,7 @@
                                                 <i class="ph-bold ph-dots-three-vertical text-xs"></i>
                                             </button>
                                             <div id="mob-flat-menu-${msg.id}" class="mob-flat-menu hidden absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] border border-gray-100 p-1 z-50 flex flex-col gap-0.5">
-                                                <button onclick="openSingleMessagePreview('${msg.id}'); toggleMobileFlatMenu('${msg.id}')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-[#2aa1af] bg-[#f0f9fa] hover:bg-[#e1f4f6] flex items-center gap-2 transition-colors">
+                                                <button onclick="openSingleMessagePreview('${msg.id}'); toggleMobileFlatMenu('${msg.id}')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-green-600 bg-[#f0f9fa] hover:bg-[#e1f4f6] flex items-center gap-2 transition-colors">
                                                     <i class="ph ph-eye text-sm"></i> Ver contenido
                                                 </button>
                                                 <button onclick="deleteMessage('${msg.id}'); toggleMobileFlatMenu('${msg.id}')" class="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-medium text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
@@ -2352,7 +2999,7 @@
                                     <span class="text-[10px] font-medium flex items-center gap-1 ${camp.status === 'Programado' ? 'text-amber-500' : camp.status === 'Enviado' ? 'text-green-600' : camp.status === 'Cola de hoy' ? 'text-blue-600' : camp.status === 'No enviado' ? 'text-red-600' : 'text-gray-500'}">
                                         <i class="ph-fill ${camp.icon} text-xs"></i> ${camp.status}
                                     </span>
-                                    <button onclick="toggleMobileMsgDetail('${msg.id}')" class="text-[10px] font-medium text-[#2aa1af] hover:text-[#21838f] flex items-center gap-1 transition-colors">
+                                    <button onclick="toggleMobileMsgDetail('${msg.id}')" class="text-[10px] font-medium text-green-600 hover:text-[#21838f] flex items-center gap-1 transition-colors">
                                         <span id="mob-detail-text-${msg.id}">Más detalles</span>
                                         <i id="mob-detail-icon-${msg.id}" class="ph ph-caret-down text-[10px]"></i>
                                     </button>
@@ -2577,6 +3224,48 @@
             sidebarSearch.addEventListener('input', (e) => renderSidebarList(e.target.value));
         }
 
+        window.getReminderBadgeHTML = function(msg) {
+            var remHours = window.getReminderIntervalHours ? window.getReminderIntervalHours() : 2;
+            var scheduledTs = new Date(msg.date + 'T' + msg.time).getTime();
+            var nowTs = Date.now();
+            if (isNaN(scheduledTs)) return '';
+
+            if (nowTs <= scheduledTs) {
+                if (remHours > 0) {
+                    return '<span class="bg-teal-50 text-teal-700 border border-teal-200 text-[9px] md:text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap shrink-0"><i class="ph ph-bell-ringing"></i> Rec. cada ' + remHours + 'h</span>';
+                }
+                return '';
+            }
+
+            if (remHours <= 0) {
+                return '<span class="bg-red-100 text-red-700 border border-red-200 text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap shrink-0"><i class="ph-fill ph-warning-circle"></i> Hora pasada (Sin rec.)</span>';
+            }
+
+            var stepMs = remHours * 3600 * 1000;
+            var elapsedMs = nowTs - scheduledTs;
+            var passedSteps = Math.floor(elapsedMs / stepMs);
+            var nextStep = passedSteps + 1;
+
+            if (nextStep > 12) {
+                return '<span class="bg-red-100 text-red-700 border border-red-200 text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap shrink-0"><i class="ph-fill ph-bell-slash"></i> ' + passedSteps + ' rec. enviados</span>';
+            }
+
+            var nextTs = scheduledTs + (nextStep * stepMs);
+            var nextDate = new Date(nextTs);
+            var h = nextDate.getHours();
+            var m = nextDate.getMinutes().toString().padStart(2, '0');
+            var ampm = h >= 12 ? 'PM' : 'AM';
+            var h12 = h % 12 || 12;
+            var timeLabel = h12 + ':' + m + ' ' + ampm;
+
+            var todayStr = new Date().toISOString().split('T')[0];
+            var nextDayStr = new Date(nextDate.getTime() - (nextDate.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            var dayPrefix = (nextDayStr !== todayStr) ? 'mañana ' : '';
+
+            var sentInfo = passedSteps > 0 ? (' · ' + passedSteps + ' rec.') : '';
+            return '<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[9px] md:text-[10px] font-semibold px-1.5 py-0.5 rounded flex items-center gap-1 whitespace-nowrap shrink-0"><i class="ph-fill ph-bell-ringing text-amber-600"></i> Vencido' + sentInfo + ' · Próx: ' + dayPrefix + timeLabel + '</span>';
+        };
+
         function createMessageCard(msg, isPending) {
             let urgencyClass = 'border-gray-200 bg-gray-50';
             let badgeClass = 'bg-green-100 text-green-700';
@@ -2621,6 +3310,7 @@
             if(msg.isPostponed) {
                 postBadge = `<span class="bg-purple-100 text-purple-700 text-[9px] md:text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-0.5 whitespace-nowrap shrink-0"><i class="ph ph-calendar-plus"></i> Posp. ${msg.totalPostponedDays || 0}d</span>`;
             }
+            const reminderBadge = isPending && window.getReminderBadgeHTML ? window.getReminderBadgeHTML(msg) : '';
             
             let historyStatusBadge = '';
             if(!isPending) {
@@ -2647,7 +3337,7 @@
 
                 const mobileFooterActions = isPending
                     ? `<div class="mt-2 pt-1.5 border-t border-gray-200/60 grid grid-cols-3 gap-1">
-                           <a href="${waLink}" target="_blank" class="py-1 px-1.5 bg-[#25D366] hover:bg-[#128C7E] text-white text-[10px] font-semibold rounded-md flex items-center justify-center gap-1 transition-colors shadow-sm">
+                           <a href="${waLink}" data-wa-send="1" onclick="return handleSendClick(event, '${purePhone}', '${encodeURIComponent(msg.text)}')" class="py-1 px-1.5 bg-[#25D366] hover:bg-[#128C7E] text-white text-[10px] font-semibold rounded-md flex items-center justify-center gap-1 transition-colors shadow-sm">
                                <i class="ph-bold ph-whatsapp-logo text-xs"></i> Enviar
                            </a>
                            <button onclick="markAsSent('${msg.id}')" class="py-1 px-1.5 bg-green-600 hover:bg-green-700 text-white text-[10px] font-semibold rounded-md flex items-center justify-center gap-1 transition-colors shadow-sm">
@@ -2666,11 +3356,16 @@
                                <i class="ph ph-presentation-chart text-xs"></i> Campaña
                            </button>
                        </div>`
-                    : `<div class="mt-2 pt-1.5 border-t border-gray-200/60 flex justify-between items-center">
+                    : `<div class="mt-2 pt-1.5 border-t border-gray-200/60 flex justify-between items-center gap-2">
                            <div>${historyStatusBadge}</div>
-                           <button onclick="deleteMessage('${msg.id}')" class="text-red-500 hover:text-red-700 text-[11px] font-medium flex items-center gap-1 transition-colors">
-                               <i class="ph ph-trash"></i> Eliminar
-                           </button>
+                           <div class="flex items-center gap-2">
+                               <button onclick="rescheduleFromHistory('${msg.id}')" class="text-teal-700 hover:text-teal-900 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 text-[10px] font-semibold flex items-center gap-1 transition-colors">
+                                   <i class="ph ph-arrows-clockwise"></i> Reprogramar
+                               </button>
+                               <button onclick="deleteMessage('${msg.id}')" class="text-red-500 hover:text-red-700 text-[11px] font-medium flex items-center gap-1 transition-colors">
+                                   <i class="ph ph-trash"></i> Eliminar
+                               </button>
+                           </div>
                        </div>`;
 
                 return `
@@ -2689,6 +3384,7 @@
                             ${mobileMoraBadge}
                             ${recBadge}
                             ${postBadge}
+                            ${reminderBadge}
                         </div>
 
                         <div class="bg-white/80 border border-gray-100 rounded-lg p-1.5 text-[11px] leading-snug text-gray-700 whitespace-pre-wrap max-h-16 overflow-y-auto custom-scrollbar relative pr-6">
@@ -2703,7 +3399,7 @@
 
             const actions = isPending ? `
                 <div class="mt-3 pt-2.5 border-t border-gray-200/60 grid grid-cols-2 sm:flex gap-1.5 md:gap-2 flex-wrap">
-                    <a href="${waLink}" target="_blank" class="col-span-1 sm:flex-1 sm:min-w-[100px] py-1.5 md:py-2 px-2.5 bg-[#25D366] hover:bg-[#128C7E] text-white text-xs md:text-sm font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm">
+                    <a href="${waLink}" data-wa-send="1" onclick="return handleSendClick(event, '${purePhone}', '${encodeURIComponent(msg.text)}')" class="col-span-1 sm:flex-1 sm:min-w-[100px] py-1.5 md:py-2 px-2.5 bg-[#25D366] hover:bg-[#128C7E] text-white text-xs md:text-sm font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm">
                         <i class="ph ph-whatsapp-logo text-base md:text-lg"></i> Enviar
                     </a>
                     <button onclick="markAsSent('${msg.id}')" class="col-span-1 sm:flex-1 sm:min-w-[85px] py-1.5 md:py-2 px-2.5 bg-green-600 hover:bg-green-700 text-white text-xs md:text-sm font-medium rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-sm">
@@ -2723,11 +3419,16 @@
                     </button>
                 </div>
             ` : `
-                <div class="mt-3 pt-2 border-t border-gray-200/60 flex justify-between items-center">
+                <div class="mt-3 pt-2 border-t border-gray-200/60 flex justify-between items-center gap-2">
                     <div>${historyStatusBadge}</div>
-                    <button onclick="deleteMessage('${msg.id}')" class="text-red-500 hover:text-red-700 text-xs md:text-sm font-medium flex items-center gap-1 transition-colors">
-                        <i class="ph ph-trash"></i> Eliminar
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <button onclick="rescheduleFromHistory('${msg.id}')" class="text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-lg border border-teal-200 text-xs font-semibold flex items-center gap-1 transition-colors">
+                            <i class="ph ph-arrows-clockwise"></i> Reprogramar
+                        </button>
+                        <button onclick="deleteMessage('${msg.id}')" class="text-red-500 hover:text-red-700 text-xs md:text-sm font-medium flex items-center gap-1 transition-colors">
+                            <i class="ph ph-trash"></i> Eliminar
+                        </button>
+                    </div>
                 </div>
             `;
 
@@ -2745,6 +3446,7 @@
                                 ${recBadge}
                                 ${postBadge}
                                 ${moraBadge}
+                                ${reminderBadge}
                             </div>
                         </div>
                         ${isPending ? `
@@ -2804,11 +3506,85 @@
             }
         };
 
-        document.getElementById('recipient').addEventListener('input', (e) => {
+        window.renderCustomContactsDropdown = function(filterText) {
+            const dropdown = document.getElementById('custom-contacts-dropdown');
+            if (!dropdown) return;
+            const query = (filterText || '').toLowerCase().trim();
+            const sorted = [...allContacts].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            const matches = query
+                ? sorted.filter(c => (c.name || '').toLowerCase().includes(query) || (c.phone || '').toLowerCase().includes(query))
+                : sorted;
+
+            if (matches.length === 0) {
+                dropdown.innerHTML = `<div class="px-3.5 py-3 text-xs text-gray-400 text-center">${allContacts.length === 0 ? 'No hay contactos guardados' : 'Sin coincidencias — pulsa Agregar para usar este número'}</div>`;
+                return;
+            }
+
+            dropdown.innerHTML = matches.slice(0, 60).map(c => {
+                const safeName = (c.name || 'Sin nombre').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const safePhone = (c.phone || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const fullVal = `${c.name}  |  ${c.phone}`;
+                const initial = (c.name || '?').charAt(0).toUpperCase();
+                return `
+                    <button type="button" onclick="selectContactFromDropdown('${encodeURIComponent(fullVal)}')" class="w-full px-3 py-2 text-left hover:bg-teal-50 active:bg-teal-100 flex items-center justify-between gap-2 transition-colors">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <div class="w-7 h-7 rounded-full bg-teal-50 border border-teal-200 text-teal-700 font-bold text-xs flex items-center justify-center shrink-0">${initial}</div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-gray-800 truncate">${safeName}</p>
+                                <p class="text-[11px] font-mono text-gray-500 truncate">${safePhone}</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-semibold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-md shrink-0">+ Agregar</span>
+                    </button>
+                `;
+            }).join('');
+        };
+
+        window.openContactsDropdown = function() {
+            const dropdown = document.getElementById('custom-contacts-dropdown');
+            const input = document.getElementById('recipient');
+            if (!dropdown) return;
+            window.renderCustomContactsDropdown(input ? input.value : '');
+            dropdown.classList.remove('hidden');
+        };
+
+        window.closeContactsDropdown = function() {
+            const dropdown = document.getElementById('custom-contacts-dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+        };
+
+        window.toggleContactsDropdown = function() {
+            const dropdown = document.getElementById('custom-contacts-dropdown');
+            if (!dropdown) return;
+            if (dropdown.classList.contains('hidden')) window.openContactsDropdown();
+            else window.closeContactsDropdown();
+        };
+
+        window.selectContactFromDropdown = function(encodedVal) {
+            const val = decodeURIComponent(encodedVal);
+            if (!selectedRecipients.includes(val)) {
+                selectedRecipients.push(val);
+                renderSelectedRecipients();
+                if (window.triggerNativeHaptic) window.triggerNativeHaptic('light');
+            } else {
+                showToast("Este destinatario ya está en la lista", "info");
+            }
+            const input = document.getElementById('recipient');
+            if (input) input.value = '';
+            document.getElementById('btn-copy-recipient').classList.add('hidden');
+            window.closeContactsDropdown();
+        };
+
+        const recipientInputEl = document.getElementById('recipient');
+        recipientInputEl.addEventListener('focus', () => {
+            window.openContactsDropdown();
+        });
+        recipientInputEl.addEventListener('input', (e) => {
             const val = e.target.value;
             const btn = document.getElementById('btn-copy-recipient');
             if (val.includes('+') || /\d{7,}/.test(val)) btn.classList.remove('hidden');
             else btn.classList.add('hidden');
+            window.openContactsDropdown();
         });
 
         const renderSelectedRecipients = () => {
@@ -2890,21 +3666,282 @@
             document.body.removeChild(textArea);
         }
 
+        // --- EDICIÓN COMPLETA DE CAMPAÑA (Fix 2) ---
+        let editSelectedRecipients = [];
+        let editWeeklyDays = new Set();
+        let editMonthlyDays = new Set();
+        let editYearlyCount = 1;
+
+        function renderEditSelectedRecipients() {
+            const container = document.getElementById('edit-selected-recipients-container');
+            if (!container) return;
+            container.innerHTML = editSelectedRecipients.map((rec, idx) => `
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-800 border border-purple-200 shadow-sm">
+                    <i class="ph-fill ph-user-circle text-purple-600 text-sm"></i>
+                    <span>${rec.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</span>
+                    <button type="button" onclick="removeEditRecipient(${idx})" class="text-purple-500 hover:text-red-500 ml-1" title="Quitar">
+                        <i class="ph-bold ph-x"></i>
+                    </button>
+                </span>
+            `).join('');
+        }
+
+        window.removeEditRecipient = (idx) => {
+            editSelectedRecipients.splice(idx, 1);
+            renderEditSelectedRecipients();
+        };
+
+        window.addEditRecipientToList = () => {
+            const input = document.getElementById('edit-recipient-input');
+            const val = input ? input.value.trim() : '';
+            if (!val) return;
+            if (!editSelectedRecipients.includes(val)) {
+                editSelectedRecipients.push(val);
+                renderEditSelectedRecipients();
+            } else {
+                showToast("Este destinatario ya está en la campaña", "info");
+            }
+            if (input) input.value = '';
+            window.closeEditContactsDropdown();
+        };
+
+        window.renderEditContactsDropdown = (filterText) => {
+            const dropdown = document.getElementById('edit-custom-contacts-dropdown');
+            if (!dropdown) return;
+            const query = (filterText || '').toLowerCase().trim();
+            const sorted = [...allContacts].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            const matches = query
+                ? sorted.filter(c => (c.name || '').toLowerCase().includes(query) || (c.phone || '').toLowerCase().includes(query))
+                : sorted;
+
+            if (matches.length === 0) {
+                dropdown.innerHTML = `<div class="px-3.5 py-2.5 text-xs text-gray-400 text-center">Sin coincidencias — pulsa Agregar</div>`;
+                return;
+            }
+            dropdown.innerHTML = matches.slice(0, 50).map(c => {
+                const fullVal = `${c.name}  |  ${c.phone}`;
+                const initial = (c.name || '?').charAt(0).toUpperCase();
+                return `
+                    <button type="button" onclick="selectEditContactFromDropdown('${encodeURIComponent(fullVal)}')" class="w-full px-3 py-2 text-left hover:bg-purple-50 flex items-center justify-between gap-2 transition-colors">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-7 h-7 rounded-full bg-purple-50 border border-purple-200 text-purple-700 font-bold text-xs flex items-center justify-center shrink-0">${initial}</div>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-gray-800 truncate">${(c.name || '').replace(/</g, "&lt;")}</p>
+                                <p class="text-[11px] font-mono text-gray-500 truncate">${(c.phone || '').replace(/</g, "&lt;")}</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md shrink-0">+ Agregar</span>
+                    </button>
+                `;
+            }).join('');
+        };
+
+        window.openEditContactsDropdown = () => {
+            const dropdown = document.getElementById('edit-custom-contacts-dropdown');
+            const input = document.getElementById('edit-recipient-input');
+            if (!dropdown) return;
+            window.renderEditContactsDropdown(input ? input.value : '');
+            dropdown.classList.remove('hidden');
+        };
+
+        window.closeEditContactsDropdown = () => {
+            const dropdown = document.getElementById('edit-custom-contacts-dropdown');
+            if (dropdown) dropdown.classList.add('hidden');
+        };
+
+        window.toggleEditContactsDropdown = () => {
+            const dropdown = document.getElementById('edit-custom-contacts-dropdown');
+            if (!dropdown) return;
+            if (dropdown.classList.contains('hidden')) window.openEditContactsDropdown();
+            else window.closeEditContactsDropdown();
+        };
+
+        window.selectEditContactFromDropdown = (encodedVal) => {
+            const val = decodeURIComponent(encodedVal);
+            if (!editSelectedRecipients.includes(val)) {
+                editSelectedRecipients.push(val);
+                renderEditSelectedRecipients();
+            }
+            const input = document.getElementById('edit-recipient-input');
+            if (input) input.value = '';
+            window.closeEditContactsDropdown();
+        };
+
+        const editRecInput = document.getElementById('edit-recipient-input');
+        if (editRecInput) {
+            editRecInput.addEventListener('focus', () => window.openEditContactsDropdown());
+            editRecInput.addEventListener('input', (e) => window.renderEditContactsDropdown(e.target.value));
+            editRecInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    window.addEditRecipientToList();
+                }
+            });
+        }
+
+        function syncEditWeeklyButtonsUI() {
+            document.querySelectorAll('.edit-weekly-day-btn').forEach(btn => {
+                const d = parseInt(btn.getAttribute('data-eday'), 10);
+                if (editWeeklyDays.has(d)) {
+                    btn.style.backgroundColor = "#4ade80";
+                    btn.style.color = "#111827";
+                    btn.style.borderColor = "#16a34a";
+                    btn.style.fontWeight = "700";
+                } else {
+                    btn.style.backgroundColor = "#ffffff";
+                    btn.style.color = "#374151";
+                    btn.style.borderColor = "#e5e7eb";
+                    btn.style.fontWeight = "600";
+                }
+            });
+        }
+
+        function buildEditMonthlyGrid() {
+            const grid = document.getElementById('edit-monthly-days-grid');
+            if (!grid) return;
+            let html = '';
+            for (let day = 1; day <= 31; day++) {
+                const active = editMonthlyDays.has(day);
+                const st = active
+                    ? 'background-color:#4ade80;color:#111827;border-color:#16a34a;font-weight:700;'
+                    : 'background-color:#ffffff;color:#374151;border-color:#e5e7eb;font-weight:600;';
+                html += `<button type="button" onclick="toggleEditMonthlyDay(${day})" class="py-2 rounded-xl text-xs border shadow-sm transition-all" style="${st}">${day}</button>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        function syncEditYearlyUI() {
+            const disp = document.getElementById('edit-yearly-count-display');
+            const minus = document.getElementById('btn-edit-yearly-minus');
+            const hint = document.getElementById('edit-yearly-years-hint');
+            if (disp) disp.textContent = String(editYearlyCount);
+            if (minus) minus.disabled = editYearlyCount <= 1;
+            if (hint) hint.textContent = editYearlyCount === 1 ? '1 envío anual (1 año)' : `${editYearlyCount} envíos anuales (${editYearlyCount} años)`;
+        }
+
+        window.toggleEditWeeklyDay = (d) => {
+            if (editWeeklyDays.has(d)) editWeeklyDays.delete(d);
+            else editWeeklyDays.add(d);
+            syncEditWeeklyButtonsUI();
+        };
+        window.toggleAllEditWeeklyDays = () => {
+            if (editWeeklyDays.size === 7) editWeeklyDays.clear();
+            else editWeeklyDays = new Set([0, 1, 2, 3, 4, 5, 6]);
+            syncEditWeeklyButtonsUI();
+        };
+        window.toggleEditMonthlyDay = (day) => {
+            if (editMonthlyDays.has(day)) editMonthlyDays.delete(day);
+            else editMonthlyDays.add(day);
+            buildEditMonthlyGrid();
+        };
+        window.clearEditMonthlyDays = () => {
+            editMonthlyDays.clear();
+            buildEditMonthlyGrid();
+        };
+        window.changeEditYearlyCount = (delta) => {
+            editYearlyCount = Math.max(1, Math.min(50, editYearlyCount + delta));
+            syncEditYearlyUI();
+        };
+
+        window.handleEditFrequencyChange = () => {
+            const isRec = document.getElementById('edit-msg-recurring')?.checked;
+            const freqEl = document.getElementById('edit-msg-frequency');
+            const weeklyPanel = document.getElementById('edit-weekly-days-panel');
+            const monthlyPanel = document.getElementById('edit-monthly-days-panel');
+            const yearlyPanel = document.getElementById('edit-yearly-years-panel');
+            const endContainer = document.getElementById('edit-end-date-container');
+            if (!freqEl) return;
+
+            const freq = freqEl.value;
+            const startVal = document.getElementById('edit-msg-date')?.value;
+            const startObj = startVal ? new Date(startVal + 'T12:00:00') : new Date();
+
+            if (weeklyPanel) weeklyPanel.classList.toggle('hidden', !isRec || freq !== 'weekly');
+            if (monthlyPanel) monthlyPanel.classList.toggle('hidden', !isRec || freq !== 'monthly');
+            if (yearlyPanel) yearlyPanel.classList.toggle('hidden', !isRec || freq !== 'yearly');
+            if (endContainer) endContainer.classList.toggle('hidden', !isRec || freq === 'yearly');
+
+            if (isRec && freq === 'weekly') {
+                if (editWeeklyDays.size === 0) editWeeklyDays.add(startObj.getDay());
+                syncEditWeeklyButtonsUI();
+            } else if (isRec && freq === 'monthly') {
+                if (editMonthlyDays.size === 0) editMonthlyDays.add(startObj.getDate());
+                buildEditMonthlyGrid();
+            } else if (isRec && freq === 'yearly') {
+                syncEditYearlyUI();
+            }
+        };
+
         window.openEditModal = (id, campaignName = null) => {
             const msg = allMessages.find(m => m.id === id);
             if(!msg) return;
             currentEditCampaignName = campaignName;
             document.getElementById('edit-msg-id').value = id;
             document.getElementById('edit-msg-name').value = msg.name || '';
-            document.getElementById('edit-msg-recipient').value = msg.recipient || '';
-            document.getElementById('edit-msg-date').value = msg.date || '';
-            document.getElementById('edit-msg-time').value = msg.time || '';
             document.getElementById('edit-msg-text').value = msg.text || '';
+
+            const isCampaignEdit = !!campaignName;
+            document.getElementById('edit-modal-title').textContent = isCampaignEdit ? 'Editar Campaña Completa' : 'Editar Mensaje';
+            document.getElementById('edit-modal-subtitle').classList.toggle('hidden', !isCampaignEdit);
+            document.getElementById('edit-single-recipient-wrap').classList.toggle('hidden', isCampaignEdit);
+            document.getElementById('edit-campaign-recipients-wrap').classList.toggle('hidden', !isCampaignEdit);
+            document.getElementById('edit-recurrence-section').classList.toggle('hidden', !isCampaignEdit);
+            document.getElementById('edit-date-label').textContent = isCampaignEdit ? 'Fecha de Inicio' : 'Fecha';
+
+            if (isCampaignEdit) {
+                const campMsgs = allMessages.filter(m => m.name === campaignName).sort((a, b) => new Date(`${a.date}T${a.time || '00:00'}`) - new Date(`${b.date}T${b.time || '00:00'}`));
+                const recSet = new Set();
+                campMsgs.forEach(m => { if (m.recipient) recSet.add(m.recipient); });
+                editSelectedRecipients = Array.from(recSet);
+                renderEditSelectedRecipients();
+
+                const firstMsg = campMsgs[0] || msg;
+                const lastMsg = campMsgs[campMsgs.length - 1] || msg;
+                document.getElementById('edit-msg-date').value = firstMsg.date || msg.date || '';
+                document.getElementById('edit-msg-time').value = firstMsg.time || msg.time || '08:00';
+
+                const isRec = !!firstMsg.isRecurring;
+                const freq = firstMsg.frequency || 'monthly';
+                const recChk = document.getElementById('edit-msg-recurring');
+                const freqSel = document.getElementById('edit-msg-frequency');
+                const recOpts = document.getElementById('edit-recurrence-options');
+                const endInp = document.getElementById('edit-msg-end-date');
+
+                if (recChk) recChk.checked = isRec;
+                if (freqSel) freqSel.value = freq;
+                if (recOpts) recOpts.classList.toggle('hidden', !isRec);
+                if (endInp) endInp.value = firstMsg.endDate || lastMsg.date || '';
+
+                editWeeklyDays = new Set();
+                editMonthlyDays = new Set();
+                editYearlyCount = 1;
+
+                if (freq === 'weekly') {
+                    campMsgs.forEach(m => {
+                        if (m.date) editWeeklyDays.add(new Date(m.date + 'T12:00:00').getDay());
+                    });
+                } else if (freq === 'monthly') {
+                    campMsgs.forEach(m => {
+                        if (m.date) editMonthlyDays.add(new Date(m.date + 'T12:00:00').getDate());
+                    });
+                } else if (freq === 'yearly') {
+                    const uniqueYears = new Set(campMsgs.map(m => (m.date || '').split('-')[0]).filter(Boolean));
+                    editYearlyCount = Math.max(1, uniqueYears.size);
+                }
+
+                window.handleEditFrequencyChange();
+            } else {
+                document.getElementById('edit-msg-recipient').value = msg.recipient || '';
+                document.getElementById('edit-msg-date').value = msg.date || '';
+                document.getElementById('edit-msg-time').value = msg.time || '08:00';
+            }
+
             document.getElementById('edit-modal').classList.replace('hidden', 'flex');
         };
 
         window.closeEditModal = () => {
             currentEditCampaignName = null;
+            window.closeEditContactsDropdown();
             document.getElementById('edit-modal').classList.replace('flex', 'hidden');
         };
 
@@ -2914,30 +3951,152 @@
                 if (!currentUserId) return;
                 const id = document.getElementById('edit-msg-id').value;
                 const name = document.getElementById('edit-msg-name').value.trim();
-                const recipient = document.getElementById('edit-msg-recipient').value.trim();
                 const date = document.getElementById('edit-msg-date').value;
                 const time = document.getElementById('edit-msg-time').value;
                 const text = document.getElementById('edit-msg-text').value.trim();
 
-                if(!name || !recipient || !date || !time || !text) {
-                    showToast("Todos los campos son requeridos", "error");
+                if(!name || !date || !time || !text) {
+                    showToast("Nombre, fecha, hora y mensaje son requeridos", "error");
                     return;
                 }
-                
+
                 const originalBtnContent = editSaveBtn.innerHTML;
                 editSaveBtn.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i> Guardando...';
                 editSaveBtn.disabled = true;
-                
+
                 try {
                     if (currentEditCampaignName) {
-                        const pendingToUpdate = allMessages.filter(m => m.name === currentEditCampaignName && m.status === 'pending');
-                        const promises = pendingToUpdate.map(msg => {
-                            const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', msg.id);
-                            return updateDoc(docRef, { name, recipient, date: msg.date, time, text, actionAt: serverTimestamp() });
+                        const pendingRecInput = document.getElementById('edit-recipient-input')?.value.trim();
+                        if (pendingRecInput && !editSelectedRecipients.includes(pendingRecInput)) {
+                            editSelectedRecipients.push(pendingRecInput);
+                        }
+                        if (editSelectedRecipients.length === 0) {
+                            showToast("Agrega al menos un destinatario", "error");
+                            editSaveBtn.innerHTML = originalBtnContent;
+                            editSaveBtn.disabled = false;
+                            return;
+                        }
+
+                        const isRec = !!document.getElementById('edit-msg-recurring')?.checked;
+                        const freq = document.getElementById('edit-msg-frequency')?.value || 'daily';
+                        const endDateVal = document.getElementById('edit-msg-end-date')?.value || '';
+
+                        if (isRec && freq !== 'yearly' && !endDateVal) {
+                            showToast("Selecciona una fecha de finalización", "error");
+                            editSaveBtn.innerHTML = originalBtnContent;
+                            editSaveBtn.disabled = false;
+                            return;
+                        }
+
+                        const toYMD = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+                        const dates = [];
+                        let resolvedEndDate = isRec ? endDateVal : null;
+                        const startDateObj = new Date(date + 'T12:00:00');
+
+                        if (isRec && freq === 'yearly') {
+                            const targetMonth = startDateObj.getMonth();
+                            const targetDay = startDateObj.getDate();
+                            const startYear = startDateObj.getFullYear();
+                            for (let offset = 0; offset < Math.max(1, editYearlyCount); offset++) {
+                                const year = startYear + offset;
+                                const lastDay = new Date(year, targetMonth + 1, 0).getDate();
+                                dates.push(toYMD(new Date(year, targetMonth, Math.min(targetDay, lastDay), 12, 0, 0)));
+                            }
+                            resolvedEndDate = dates[dates.length - 1] || date;
+                        } else if (isRec && endDateVal) {
+                            const endDateObj = new Date(endDateVal + 'T23:59:59');
+                            if (freq === 'daily') {
+                                let c = new Date(startDateObj);
+                                let guard = 3650;
+                                while (c <= endDateObj && guard > 0) {
+                                    dates.push(toYMD(c));
+                                    c.setDate(c.getDate() + 1);
+                                    guard--;
+                                }
+                            } else if (freq === 'weekly') {
+                                const activeDays = editWeeklyDays.size > 0 ? editWeeklyDays : new Set([startDateObj.getDay()]);
+                                let c = new Date(startDateObj);
+                                let guard = 3650;
+                                while (c <= endDateObj && guard > 0) {
+                                    if (activeDays.has(c.getDay())) dates.push(toYMD(c));
+                                    c.setDate(c.getDate() + 1);
+                                    guard--;
+                                }
+                            } else if (freq === 'monthly') {
+                                const activeMonthDays = editMonthlyDays.size > 0
+                                    ? Array.from(editMonthlyDays).sort((a, b) => a - b)
+                                    : [startDateObj.getDate()];
+                                let year = startDateObj.getFullYear();
+                                let month = startDateObj.getMonth();
+                                const endYear = endDateObj.getFullYear();
+                                const endMonth = endDateObj.getMonth();
+                                let guard = 240;
+                                while ((year < endYear || (year === endYear && month <= endMonth)) && guard > 0) {
+                                    const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+                                    const resolvedSet = new Set();
+                                    activeMonthDays.forEach(tDay => resolvedSet.add(Math.min(tDay, lastDayOfMonth)));
+                                    Array.from(resolvedSet).sort((a, b) => a - b).forEach(dNum => {
+                                        const cand = new Date(year, month, dNum, 12, 0, 0);
+                                        if (cand >= startDateObj && cand <= endDateObj) dates.push(toYMD(cand));
+                                    });
+                                    month++;
+                                    if (month > 11) { month = 0; year++; }
+                                    guard--;
+                                }
+                            }
+                            if (dates.length === 0) {
+                                showToast("No hay fechas válidas en el rango seleccionado", "error");
+                                editSaveBtn.innerHTML = originalBtnContent;
+                                editSaveBtn.disabled = false;
+                                return;
+                            }
+                        } else {
+                            dates.push(date);
+                        }
+
+                        const messagesRef = collection(db, 'artifacts', appId, 'users', currentUserId, 'messages');
+                        const oldPending = allMessages.filter(m => m.name === currentEditCampaignName && m.status === 'pending');
+
+                        const delBatch = writeBatch(db);
+                        oldPending.forEach(m => {
+                            delBatch.delete(doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', m.id));
                         });
-                        await Promise.all(promises);
-                        showToast(`Se actualizaron ${pendingToUpdate.length} mensajes programados`);
+                        await delBatch.commit();
+
+                        const newPayloads = [];
+                        editSelectedRecipients.forEach(rec => {
+                            const personalizedText = window.personalizeMessageText ? window.personalizeMessageText(text, rec) : text;
+                            dates.forEach(d => {
+                                newPayloads.push({
+                                    name,
+                                    recipient: rec,
+                                    date: d,
+                                    time,
+                                    text: personalizedText,
+                                    isRecurring: isRec,
+                                    frequency: isRec ? freq : null,
+                                    endDate: resolvedEndDate,
+                                    status: 'pending',
+                                    createdAt: serverTimestamp()
+                                });
+                            });
+                        });
+
+                        for (let i = 0; i < newPayloads.length; i += 500) {
+                            const batch = writeBatch(db);
+                            newPayloads.slice(i, i + 500).forEach(p => batch.set(doc(messagesRef), p));
+                            await batch.commit();
+                        }
+
+                        showToast(`Campaña actualizada: ${newPayloads.length} mensajes programados`);
                     } else {
+                        const recipient = document.getElementById('edit-msg-recipient').value.trim();
+                        if (!recipient) {
+                            showToast("El destinatario es requerido", "error");
+                            editSaveBtn.innerHTML = originalBtnContent;
+                            editSaveBtn.disabled = false;
+                            return;
+                        }
                         const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', id);
                         await updateDoc(docRef, {
                             name, recipient, date, time, text,
@@ -2956,6 +4115,80 @@
             });
         }
 
+        window._nativeDoneQueue = JSON.parse(localStorage.getItem('wascheduler_native_done_queue') || '[]');
+        window._nativePostponeQueue = JSON.parse(localStorage.getItem('wascheduler_native_postpone_queue') || '[]');
+
+        window.markAsSentFromNative = function(id) {
+            if (!id || id === 'test_demo_id') return;
+            if (!window._nativeDoneQueue.includes(id)) {
+                window._nativeDoneQueue.push(id);
+                localStorage.setItem('wascheduler_native_done_queue', JSON.stringify(window._nativeDoneQueue));
+            }
+            if (typeof window.flushNativeDoneQueue === 'function') {
+                window.flushNativeDoneQueue();
+            }
+        };
+
+        window.postponeOneDayFromNative = function(id) {
+            if (!id || id === 'test_demo_id') return;
+            if (!window._nativePostponeQueue.includes(id)) {
+                window._nativePostponeQueue.push(id);
+                localStorage.setItem('wascheduler_native_postpone_queue', JSON.stringify(window._nativePostponeQueue));
+            }
+            if (typeof window.flushNativeDoneQueue === 'function') {
+                window.flushNativeDoneQueue();
+            }
+        };
+
+        window._nativeSkipQueue = JSON.parse(localStorage.getItem('wascheduler_native_skip_queue') || '[]');
+        window.skipMessageFromNative = function(id) {
+            if (!id || id === 'test_demo_id') return;
+            if (!window._nativeSkipQueue.includes(id)) {
+                window._nativeSkipQueue.push(id);
+                localStorage.setItem('wascheduler_native_skip_queue', JSON.stringify(window._nativeSkipQueue));
+            }
+            if (typeof window.flushNativeDoneQueue === 'function') {
+                window.flushNativeDoneQueue();
+            }
+        };
+
+        window.rescheduleFromHistory = function(id) {
+            const msg = allMessages.find(m => m.id === id);
+            if (!msg) return;
+            switchView('new');
+            document.getElementById('msg-name').value = msg.name || '';
+            selectedRecipients = msg.recipient ? [msg.recipient] : [];
+            renderSelectedRecipients();
+            document.getElementById('msg-text').value = msg.text || '';
+            const today = new Date();
+            const localTodayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+            document.getElementById('msg-date').value = localTodayStr;
+            document.getElementById('msg-time').value = msg.time || '08:00';
+            if (window.triggerNativeHaptic) window.triggerNativeHaptic('light');
+            showToast('Datos cargados. Ajusta fecha/hora y guarda.', 'info');
+        };
+
+        window.exportFullBackup = function() {
+            const backup = {
+                exportedAt: new Date().toISOString(),
+                messagesCount: allMessages.length,
+                contactsCount: allContacts.length,
+                messages: allMessages,
+                contacts: allContacts
+            };
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'WaScheduler_Backup_' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            if (window.triggerNativeHaptic) window.triggerNativeHaptic('success');
+            showToast('Copia de seguridad descargada');
+        };
+
         window.markAsSent = async (id) => {
             if (!currentUserId) return; 
             try {
@@ -2963,6 +4196,7 @@
                 if(!msg) return;
                 const docRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'messages', id);
                 await updateDoc(docRef, { status: 'sent', actionAt: serverTimestamp() });
+                if (window.triggerNativeHaptic) window.triggerNativeHaptic('success');
                 showToast("Marcado como enviado");
             } catch (err) {
                 console.error("Error updating:", err);
@@ -3141,7 +4375,6 @@
             });
         }
 
-        // --- SELECTOR VISUAL DE DÍAS SEMANALES, MENSUALES Y ANUALES ---
         let selectedWeeklyDays = new Set();
         let selectedMonthlyDays = new Set();
         let selectedYearlyCount = 1;
@@ -3194,29 +4427,20 @@
         }
 
         window.toggleWeeklyDay = (dayIndex) => {
-            if (selectedWeeklyDays.has(dayIndex)) {
-                selectedWeeklyDays.delete(dayIndex);
-            } else {
-                selectedWeeklyDays.add(dayIndex);
-            }
+            if (selectedWeeklyDays.has(dayIndex)) selectedWeeklyDays.delete(dayIndex);
+            else selectedWeeklyDays.add(dayIndex);
             syncWeeklyButtonsUI();
         };
 
         window.toggleAllWeeklyDays = () => {
-            if (selectedWeeklyDays.size === 7) {
-                selectedWeeklyDays.clear();
-            } else {
-                selectedWeeklyDays = new Set([0, 1, 2, 3, 4, 5, 6]);
-            }
+            if (selectedWeeklyDays.size === 7) selectedWeeklyDays.clear();
+            else selectedWeeklyDays = new Set([0, 1, 2, 3, 4, 5, 6]);
             syncWeeklyButtonsUI();
         };
 
         window.toggleMonthlyDay = (dayNum) => {
-            if (selectedMonthlyDays.has(dayNum)) {
-                selectedMonthlyDays.delete(dayNum);
-            } else {
-                selectedMonthlyDays.add(dayNum);
-            }
+            if (selectedMonthlyDays.has(dayNum)) selectedMonthlyDays.delete(dayNum);
+            else selectedMonthlyDays.add(dayNum);
             buildMonthlyCalendarGrid();
         };
 
@@ -3235,11 +4459,8 @@
             const freq = document.getElementById('msg-frequency')?.value;
             const endInput = document.getElementById('msg-end-date');
             if (!endInput) return;
-            if (isRec && freq !== 'yearly') {
-                endInput.setAttribute('required', 'true');
-            } else {
-                endInput.removeAttribute('required');
-            }
+            if (isRec && freq !== 'yearly') endInput.setAttribute('required', 'true');
+            else endInput.removeAttribute('required');
         };
 
         window.handleFrequencyChange = () => {
@@ -3261,14 +4482,10 @@
             if (window.syncRecurrenceEndRequirement) window.syncRecurrenceEndRequirement();
 
             if (freq === 'weekly') {
-                if (selectedWeeklyDays.size === 0) {
-                    selectedWeeklyDays.add(startObj.getDay());
-                }
+                if (selectedWeeklyDays.size === 0) selectedWeeklyDays.add(startObj.getDay());
                 syncWeeklyButtonsUI();
             } else if (freq === 'monthly') {
-                if (selectedMonthlyDays.size === 0) {
-                    selectedMonthlyDays.add(startObj.getDate());
-                }
+                if (selectedMonthlyDays.size === 0) selectedMonthlyDays.add(startObj.getDate());
                 buildMonthlyCalendarGrid();
             } else if (freq === 'yearly') {
                 syncYearlyCounterUI();
@@ -3374,9 +4591,7 @@
                         let c = new Date(startDateObj);
                         let guard = 3650;
                         while (c <= endDateObj && guard > 0) {
-                            if (activeDays.has(c.getDay())) {
-                                dates.push(toYMD(c));
-                            }
+                            if (activeDays.has(c.getDay())) dates.push(toYMD(c));
                             c.setDate(c.getDate() + 1);
                             guard--;
                         }
@@ -3406,10 +4621,7 @@
                             });
 
                             month++;
-                            if (month > 11) {
-                                month = 0;
-                                year++;
-                            }
+                            if (month > 11) { month = 0; year++; }
                             guard--;
                         }
                     }
@@ -3426,13 +4638,14 @@
 
                 const allPayloads = [];
                 finalRecipients.forEach(rec => {
+                    const personalizedText = window.personalizeMessageText ? window.personalizeMessageText(text, rec) : text;
                     dates.forEach(d => {
                         allPayloads.push({
                             name,
                             recipient: rec,
                             date: d,
                             time,
-                            text,
+                            text: personalizedText,
                             isRecurring,
                             frequency: isRecurring ? frequency : null,
                             endDate: resolvedEndDate,
@@ -3460,7 +4673,9 @@
                 document.getElementById('recurrence-options').classList.add('hidden');
                 if (window.resetRecurrenceSelections) window.resetRecurrenceSelections();
                 document.getElementById('msg-end-date').removeAttribute('required');
-                document.getElementById('msg-date').valueAsDate = new Date();
+                const nowReset = new Date();
+                document.getElementById('msg-date').value = new Date(nowReset.getTime() - (nowReset.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                document.getElementById('msg-time').value = '08:00';
                 
             } catch (err) {
                 console.error("Error adding document:", err);
@@ -3472,17 +4687,19 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            if (window.syncWaSettingsUI) window.syncWaSettingsUI();
             switchView('pending'); 
             
             const today = new Date();
             const localTodayStr = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
             document.getElementById('msg-date').value = localTodayStr;
-            
-            let h = today.getHours();
-            let m = today.getMinutes();
-            if (m < 30) m = 30;
-            else { m = 0; h = (h + 1) % 24; }
-            document.getElementById('msg-time').value = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+            document.getElementById('msg-time').value = '08:00';
+
+            setInterval(() => {
+                if (!document.getElementById('view-pending').classList.contains('hidden')) {
+                    renderUI();
+                }
+            }, 30000);
         });
 
         initialize();
